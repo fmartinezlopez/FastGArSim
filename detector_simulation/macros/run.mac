@@ -1,0 +1,13 @@
+# Macro file for running the GArSimulation
+#
+# First initialize
+/control/execute macros/init.mac
+
+# Configure particle gun
+/gun/particleType proton
+/gun/energy 500 MeV
+/gun/positionZ 0 cm
+/gun/momentumDirection 1 0 0
+
+# Start simulation
+/run/beamOn 100

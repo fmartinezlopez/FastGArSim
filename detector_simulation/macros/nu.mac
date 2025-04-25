@@ -1,0 +1,7 @@
+# Macro file for running the GArSimulation
+#
+# First initialize
+/control/execute macros/init.mac
+
+# Run events from the GENIE file
+/run/beamOn 1000
