@@ -15,7 +15,7 @@ else()
 endif()
 
 #----------------------------------------------------------------------------
-# Find ROOT package for reading GENIE output files
+# Find ROOT package with required components
 find_package(ROOT REQUIRED COMPONENTS Core RIO Tree)
 include(${ROOT_USE_FILE})
 
@@ -32,8 +32,23 @@ file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 #----------------------------------------------------------------------------
+# Generate ROOT dictionary for ROOTDataTypes (without Geant4 dependencies)
+ROOT_GENERATE_DICTIONARY(ROOTDataDict
+                         ${PROJECT_SOURCE_DIR}/include/ROOTDataTypes.hh
+                         LINKDEF ${PROJECT_SOURCE_DIR}/include/ROOTDataTypesLinkDef.h)
+
+#----------------------------------------------------------------------------
+# Create a shared library with the dictionary
+add_library(ROOTDataDictLib SHARED ROOTDataDict.cxx)
+target_link_libraries(ROOTDataDictLib ${ROOT_LIBRARIES})
+set_target_properties(ROOTDataDictLib PROPERTIES
+                      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+                      SUFFIX ".dylib"
+                      OUTPUT_NAME "ROOTDataDict")
+
+#----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
-add_executable(GArSimulation GArSimulation.cc ${sources} ${headers})
+add_executable(GArSimulation GArSimulation.cc ${sources} ${headers} ROOTDataDict.cxx)
 target_link_libraries(GArSimulation ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
 
 #----------------------------------------------------------------------------
@@ -43,7 +58,7 @@ target_link_libraries(GArSimulation ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
 set(SCRIPTS
   macros/init.mac
   macros/run.mac
-  macros/genie.mac
+  macros/nu.mac
   macros/vis.mac
   )
 
@@ -58,3 +73,14 @@ endforeach()
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 install(TARGETS GArSimulation DESTINATION bin)
+
+#----------------------------------------------------------------------------
+# Install dictionary files
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/ROOTDataDict_rdict.pcm
+  ${CMAKE_CURRENT_BINARY_DIR}/libROOTDataDict.rootmap
+  DESTINATION bin)
+
+#----------------------------------------------------------------------------
+# Install the shared library
+install(TARGETS ROOTDataDictLib DESTINATION lib)
