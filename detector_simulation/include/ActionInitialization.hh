@@ -14,6 +14,7 @@ public:
     
     virtual void BuildForMaster() const;
     virtual void Build() const;
+    void UpdatePrimaryGeneratorAction() const;
 
     // Setter methods
     void SetGeneratorType(const G4String& type) { fGeneratorType = type; }

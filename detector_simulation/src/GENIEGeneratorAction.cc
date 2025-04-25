@@ -41,8 +41,6 @@ GENIEGeneratorAction::GENIEGeneratorAction(const G4String& fileName)
   gSystem->Load("libTree");
   gSystem->Load("libRIO");
 
-  SetTargetVolumeByName("TPC_log");
-
   // Get analysis manager
   fAnalysisManager = AnalysisManager::GetInstance();
 
@@ -159,13 +157,16 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     fParticleGun->GeneratePrimaryVertex(anEvent);
     return;
   }
+
+  // Logical volume lookyo defered to make sure volumes exist
+  SetTargetVolumeByName("TPC_log");
   
   // Create a primary vertex at the neutrino interaction point
   //G4ThreeVector vtxPos(0, 0, 0);
   G4ThreeVector vtxPos = GetRandomPositionInVolume();
   G4double vtxTime = 0;
 
-  //G4cout << "Creating interaction vertex at " << vtxPos/m << G4endl;
+  G4cout << "Creating interaction vertex at " << vtxPos/m << G4endl;
   
   G4PrimaryVertex* vertex = new G4PrimaryVertex(vtxPos, vtxTime);
 
@@ -182,12 +183,12 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   G4double pyl = fPyLepton * GeV;
   G4double pzl = fPxLepton * GeV;
 
-  //G4cout << "Lepton PDG: " << leptonPDG << "\n"
-  //       << "       E:   " << el/GeV    << " GeV \n"
-  //       << "       px:  " << pxl/GeV   << " GeV/c \n"
-  //       << "       py:  " << pyl/GeV   << " GeV/c \n"
-  //       << "       pz:  " << pzl/GeV   << " GeV/c \n"
-  //       << G4endl;
+  G4cout << "Lepton PDG: " << leptonPDG << "\n"
+         << "       E:   " << el/GeV    << " GeV \n"
+         << "       px:  " << pxl/GeV   << " GeV/c \n"
+         << "       py:  " << pyl/GeV   << " GeV/c \n"
+         << "       pz:  " << pzl/GeV   << " GeV/c \n"
+         << G4endl;
 
   G4PrimaryParticle* lepton = new G4PrimaryParticle(leptonDef);
   lepton->SetMomentum(pxl, pyl, pzl);
@@ -196,7 +197,7 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   // Add lepton to vertex
   vertex->SetPrimary(lepton);
 
-  //G4cout << "Number of FSI hadrons:  " << fNFSI << G4endl;
+  G4cout << "Number of FSI hadrons:  " << fNFSI << G4endl;
 
   // Create final state hadrons from the GENIE event
   for (int i = 0; i < fNFSI; ++i) {
@@ -214,12 +215,12 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     G4double pyf = fPyHadron[i] * GeV;
     G4double pzf = fPxHadron[i] * GeV;
 
-    //G4cout << "Hadron " << i << " PDG: " << fPDGCodes[i] << "\n"
-    //       << "     E:   " << ef/GeV  << " GeV \n"
-    //       << "     px:  " << pxf/GeV << " GeV/c \n"
-    //       << "     py:  " << pyf/GeV << " GeV/c \n"
-    //       << "     pz:  " << pzf/GeV << " GeV/c \n"
-    //       << G4endl;
+    G4cout << "Hadron " << i << " PDG: " << fPDGCodes[i] << "\n"
+           << "     E:   " << ef/GeV  << " GeV \n"
+           << "     px:  " << pxf/GeV << " GeV/c \n"
+           << "     py:  " << pyf/GeV << " GeV/c \n"
+           << "     pz:  " << pzf/GeV << " GeV/c \n"
+           << G4endl;
     
     // Create primary particle
     G4PrimaryParticle* hadron = new G4PrimaryParticle(hadronDef);
@@ -235,10 +236,10 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   anEvent->AddPrimaryVertex(vertex);
   
   // Print event summary
-  //G4cout << "Generated Geant4 event from GENIE event #" << fCurrentEvent-1 << "\n"
-  //       << "Nu flavour: " << fNu << "\n"
-  //       << (fCC ? "CC" : "NC") << "\n"
-  //       << G4endl;
+  G4cout << "Generated Geant4 event from GENIE event #" << fCurrentEvent-1 << "\n"
+         << "Nu flavour: " << fNu << "\n"
+         << (fCC ? "CC" : "NC") << "\n"
+         << G4endl;
 }
 
 void GENIEGeneratorAction::SetTargetVolumeByName(const G4String& volumeName)

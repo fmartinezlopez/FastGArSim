@@ -45,11 +45,14 @@ void PrimaryGeneratorMessenger::SetNewValue(G4UIcommand* command, G4String newVa
 {
   if (command == fGeneratorTypeCmd) {
     fActionInitialization->SetGeneratorType(newValue);
+    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
   else if (command == fGenieFileNameCmd) {
     fActionInitialization->SetGenieFileName(newValue);
+    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
   else if (command == fNuWroFileNameCmd) {
     fActionInitialization->SetNuWroFileName(newValue);
+    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
 }
