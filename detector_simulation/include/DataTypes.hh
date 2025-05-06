@@ -17,6 +17,17 @@ struct TrajectoryPoint
   TrajectoryPoint& operator=(const TrajectoryPoint& other) = default;
 };
 
+struct MomentumPoint
+{
+  G4ThreeVector momentum;
+
+  // Copy constructor (automatically generated, but listed explicitly for clarity)
+  MomentumPoint(const MomentumPoint& other) = default;
+  
+  // Assignment operator (automatically generated, but listed explicitly for clarity)
+  MomentumPoint& operator=(const MomentumPoint& other) = default;
+};
+
 class Trajectory
 {
 public:
@@ -25,6 +36,7 @@ public:
   // Copy constructor
   Trajectory(const Trajectory& other)
     : points(other.points),
+      mom_points(other.mom_points),
       start_vol_name(other.start_vol_name),
       stop_vol_name(other.stop_vol_name)
   {}
@@ -34,6 +46,7 @@ public:
   {
     if (this != &other) {
       points = other.points;
+      mom_points = other.mom_points;
       start_vol_name = other.start_vol_name;
       stop_vol_name = other.stop_vol_name;
     }
@@ -45,12 +58,19 @@ public:
     points.push_back({pos, t});
     stop_vol_name = vol_name;
   }
+
+  void AddMomPoint(const G4ThreeVector& mom) {
+    mom_points.push_back({mom});
+  }
+
   const std::vector<TrajectoryPoint>& GetPoints() const { return points; }
+  const std::vector<MomentumPoint>& GetMomPoints() const { return mom_points; }
   const G4String GetStartVolName() const { return start_vol_name; }
   const G4String GetStopVolName()  const { return stop_vol_name; }
   
 private:
   std::vector<TrajectoryPoint> points;
+  std::vector<MomentumPoint> mom_points;
   G4String start_vol_name;
   G4String stop_vol_name;
 };
@@ -159,6 +179,7 @@ public:
     : trackID(other.trackID),
       pdgCode(other.pdgCode),
       creatorProcess(other.creatorProcess),
+      endProcess(other.endProcess),
       motherID(other.motherID),
       trajectory(other.trajectory),
       tpcHits(other.tpcHits),
@@ -176,6 +197,7 @@ public:
       trackID = other.trackID;
       pdgCode = other.pdgCode;
       creatorProcess = other.creatorProcess;
+      endProcess = other.endProcess;
       motherID = other.motherID;
       trajectory = other.trajectory;
       tpcHits = other.tpcHits;
@@ -194,6 +216,8 @@ public:
     return new Particle(*this);
   }
 
+  void SetEndProcess(const G4String process) { endProcess = process; }
+
   void SetTrajectory(const Trajectory& traj) { trajectory = traj; }
   void AddTPCHit(const TPCHit& hit) { tpcHits.push_back(hit); }
   void AddECalHit(const ECalHit& hit) { ecalHits.push_back(hit); }
@@ -208,7 +232,12 @@ public:
   G4int GetTrackID() const { return trackID; }
   G4int GetPDGCode() const { return pdgCode; }
   G4String GetCreatorProcess() const { return creatorProcess; }
+  G4String GetEndProcess() const { return endProcess; }
   G4int GetMotherID() const { return motherID; }
+
+  const G4ThreeVector& GetStartPosition() const { return trajectory.GetPoints().front().position; }
+  const G4ThreeVector& GetEndPosition() const { return trajectory.GetPoints().back().position; }
+  const G4ThreeVector& GetMomentum() const { return trajectory.GetMomPoints().front().momentum; }
 
   const float GetTPCPathLength() const { return std::accumulate(tpcHits.begin(), tpcHits.end(), 0.0, [](float sum, const TPCHit& hit) { return sum + hit.GetStepSize(); }); }
   
@@ -234,6 +263,7 @@ private:
   G4int trackID;
   G4int pdgCode;
   G4String creatorProcess;
+  G4String endProcess;
   G4int motherID;
   Trajectory trajectory;
   std::vector<TPCHit>  tpcHits;
@@ -243,29 +273,6 @@ private:
   std::vector<TPCHit>  sec_tpcHits;
   std::vector<ECalHit> sec_ecalHits;
   std::vector<MuIDHit> sec_muidHits;
-};
-
-class TrueParticle
-{
-public:
-  TrueParticle(G4int pdg) : pdgCode(pdg) {}
-  
-  // Copy constructor
-  TrueParticle(const TrueParticle& other)
-    : pdgCode(other.pdgCode)
-  {}
-  
-  // Assignment operator
-  TrueParticle& operator=(const TrueParticle& other)
-  {
-    if (this != &other) {
-      pdgCode = other.pdgCode;
-    }
-    return *this;
-  }
-
-private:
-  G4int pdgCode;
 };
 
 class Event

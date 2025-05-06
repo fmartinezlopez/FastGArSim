@@ -7,6 +7,8 @@
 #pragma link C++ namespace root;
 #pragma link C++ class root::TrajectoryPoint+;
 #pragma link C++ class std::vector<root::TrajectoryPoint>+;
+#pragma link C++ class root::MomentumPoint+;
+#pragma link C++ class std::vector<root::MomentumPoint>+;
 #pragma link C++ class root::Trajectory+;
 #pragma link C++ class root::TPCHit+;
 #pragma link C++ class std::vector<root::TPCHit>+;

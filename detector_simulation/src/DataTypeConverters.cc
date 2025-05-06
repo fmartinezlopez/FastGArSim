@@ -42,6 +42,15 @@ root::TrajectoryPoint ConvertTrajectoryPoint(const TrajectoryPoint& g4Point) {
     );
 }
 
+// Convert Geant4 MomentumPoint to ROOT MomentumPoint
+root::MomentumPoint ConvertMomentumPoint(const MomentumPoint& g4MomPoint) {
+    return root::MomentumPoint(
+        g4MomPoint.momentum.x()/MeV,
+        g4MomPoint.momentum.y()/MeV,
+        g4MomPoint.momentum.z()/MeV
+    );
+}
+
 // Convert Geant4 Trajectory to ROOT Trajectory
 root::Trajectory ConvertTrajectory(const Trajectory& g4Trajectory) {
     root::Trajectory rootTrajectory;
@@ -56,6 +65,13 @@ root::Trajectory ConvertTrajectory(const Trajectory& g4Trajectory) {
         root::TrajectoryPoint rootPoint = ConvertTrajectoryPoint(g4Point);
         rootTrajectory.points.push_back(rootPoint);
     }
+
+    // Convert momentum points
+    const auto& g4MomPoints = g4Trajectory.GetMomPoints();
+    for (const auto& g4MomPoint : g4MomPoints) {
+        root::MomentumPoint rootMomPoint = ConvertMomentumPoint(g4MomPoint);
+        rootTrajectory.mom_points.push_back(rootMomPoint);
+    }
     
     return rootTrajectory;
 }
@@ -66,6 +82,7 @@ root::Particle ConvertParticle(const Particle& g4Particle) {
         g4Particle.GetTrackID(),
         g4Particle.GetPDGCode(),
         g4Particle.GetCreatorProcess().c_str(),
+        g4Particle.GetEndProcess().c_str(),
         g4Particle.GetMotherID()
     );
     
@@ -111,6 +128,6 @@ root::Event ConvertEvent(const Event& g4Event) {
     for (const auto& g4Particle : g4Event.GetParticles()) {
         rootEvent.particles.push_back(ConvertParticle(g4Particle));
     }
-    
+
     return rootEvent;
 }

@@ -24,12 +24,26 @@ namespace root {
         ClassDef(TrajectoryPoint, 1)
     };
 
+    class MomentumPoint : public TObject
+    {
+        public:
+        MomentumPoint() : x(0), y(0), z(0) {}
+        
+        MomentumPoint(Double_t px, Double_t py, Double_t pz) 
+            : x(px), y(py), z(pz){}
+        
+        Double_t x, y, z;
+
+        ClassDef(MomentumPoint, 1)
+    };
+
     class Trajectory : public TObject
     {
         public:
         Trajectory() = default;
         
         std::vector<TrajectoryPoint> points;
+        std::vector<MomentumPoint> mom_points;
         TString start_vol_name;
         TString stop_vol_name;
 
@@ -82,14 +96,15 @@ namespace root {
     class Particle : public TObject
     {
         public:
-        Particle() : trackID(0), pdgCode(0), creatorProcess(""), motherID(0) {}
+        Particle() : trackID(0), pdgCode(0), creatorProcess(""), endProcess(""), motherID(0) {}
         
-        Particle(Int_t id, Int_t pdg, const TString& process, Int_t momid) 
-            : trackID(id), pdgCode(pdg), creatorProcess(process), motherID(momid) {}
+        Particle(Int_t id, Int_t pdg, const TString& process, const TString& end_process, Int_t momid) 
+            : trackID(id), pdgCode(pdg), creatorProcess(process), endProcess(end_process), motherID(momid) {}
         
         Int_t trackID;
         Int_t pdgCode;
         TString creatorProcess;
+        TString endProcess;
         Int_t motherID;
         Trajectory trajectory;
         std::vector<TPCHit> tpcHits;

@@ -213,6 +213,7 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
 void AnalysisManager::RecordTrackInfo(const G4Track* track)
 {
   G4ThreeVector position = track->GetPosition();
+  G4ThreeVector momentum = track->GetMomentum();
   G4double time = track->GetGlobalTime();
   G4String volumeName = track->GetVolume()->GetLogicalVolume()->GetName();
   
@@ -221,6 +222,9 @@ void AnalysisManager::RecordTrackInfo(const G4Track* track)
   
   // Add trajectory point
   particle->GetTrajectory().AddPoint(position, time, volumeName);
+
+  // Add momentum point
+  particle->GetTrajectory().AddMomPoint(momentum);
 }
 
 std::map<G4int, ::Particle*> AnalysisManager::SimplifyParticleCollection()
