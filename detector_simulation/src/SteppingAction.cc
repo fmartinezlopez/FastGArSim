@@ -47,6 +47,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     if (fRunAction->GetSaveOutput()) {
         // Record energy deposit and check for TPC/ECal hits
         fAnalysisManager->RecordEnergyDeposit(step);
-        fAnalysisManager->RecordTrackInfo(step->GetTrack());
+        if (fAnalysisManager->GetWriteTrajectory()) {
+            fAnalysisManager->RecordTrackInfo(step->GetTrack());
+        }
     }
 }

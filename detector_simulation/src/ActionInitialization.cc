@@ -4,6 +4,7 @@
 #include "NuWroGeneratorAction.hh"
 #include "RunAction.hh"
 #include "EventAction.hh"
+#include "TrackingAction.hh"
 #include "SteppingAction.hh"
 #include "DetectorConstruction.hh"
 
@@ -71,6 +72,10 @@ void ActionInitialization::Build() const
     // Create and register event action
     EventAction* eventAction = new EventAction(runAction);
     SetUserAction(eventAction);
+
+    // Create and register tracking action
+    TrackingAction* trackingAction = new TrackingAction(eventAction, runAction);
+    SetUserAction(trackingAction);
     
     // Create and register stepping action
     SteppingAction* steppingAction = new SteppingAction(eventAction, runAction, fDetConstruction);

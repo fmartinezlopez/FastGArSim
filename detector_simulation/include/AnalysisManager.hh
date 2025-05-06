@@ -43,6 +43,9 @@ public:
   void SetOutputFileName(const G4String& name) { fOutputFileName = name; }
   void SetEnergyCut(G4double cut);
 
+  // Getter methods
+  G4bool GetWriteTrajectory() const { return fWriteTrajectory; }
+
 private:
   AnalysisManager();
   static G4ThreadLocal AnalysisManager* fInstance;
