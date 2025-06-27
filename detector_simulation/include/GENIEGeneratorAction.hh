@@ -21,7 +21,7 @@ class AnalysisManager;
 class GENIEGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
 public:
-  GENIEGeneratorAction(const G4String& fileName);
+  GENIEGeneratorAction(const G4String& fileName, G4int initialEvent);
   virtual ~GENIEGeneratorAction();
   
   virtual void GeneratePrimaries(G4Event*);
@@ -55,6 +55,7 @@ private:
   TTree*   fGenieTree;
   
   // Event counters
+  G4int fInitialEvent;
   G4int fCurrentEvent;
   G4int fTotalEvents;
   

@@ -13,7 +13,8 @@ ActionInitialization::ActionInitialization(DetectorConstruction* detConstruction
   fDetConstruction(detConstruction),
   fGeneratorType("particle"),
   fGenieFileName(""),
-  fNuWroFileName("")
+  fNuWroFileName(""),
+  fInitialEvent(0)
 {
     // Nothing else to initialize
 }
@@ -44,7 +45,7 @@ void ActionInitialization::Build() const
             primaryGeneratorAction = new PrimaryGeneratorAction();
         } else {
             G4cout << "Using GENIE primary generator with file: " << fGenieFileName << G4endl;
-            primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName);
+            primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName, fInitialEvent);
         }
     } else if (fGeneratorType == "nuwro") {
         // Check if NuWro file name is set
@@ -54,7 +55,7 @@ void ActionInitialization::Build() const
             primaryGeneratorAction = new PrimaryGeneratorAction();
         } else {
             G4cout << "Using NuWro primary generator with file: " << fNuWroFileName << G4endl;
-            primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName);
+            primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName, fInitialEvent);
         }
     } else {
         // Default or explicitly specified "particle" type
@@ -95,7 +96,7 @@ void ActionInitialization::UpdatePrimaryGeneratorAction() const
             primaryGeneratorAction = new PrimaryGeneratorAction();
         } else {
             G4cout << "Using GENIE primary generator with file: " << fGenieFileName << G4endl;
-            primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName);
+            primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName, fInitialEvent);
         }
     } else if (fGeneratorType == "nuwro") {
         // Check if NuWro file name is set
@@ -105,7 +106,7 @@ void ActionInitialization::UpdatePrimaryGeneratorAction() const
             primaryGeneratorAction = new PrimaryGeneratorAction();
         } else {
             G4cout << "Using NuWro primary generator with file: " << fNuWroFileName << G4endl;
-            primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName);
+            primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName, fInitialEvent);
         }
     } else {
         // Default or explicitly specified "particle" type

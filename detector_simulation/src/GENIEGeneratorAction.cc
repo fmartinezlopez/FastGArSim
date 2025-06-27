@@ -18,7 +18,7 @@
 #include "TTree.h"
 #include "TBranch.h"
 
-GENIEGeneratorAction::GENIEGeneratorAction(const G4String& fileName)
+GENIEGeneratorAction::GENIEGeneratorAction(const G4String& fileName, G4int initialEvent)
  : G4VUserPrimaryGeneratorAction(),
    fAnalysisManager(nullptr),
    fTargetVolume(nullptr),
@@ -27,6 +27,7 @@ GENIEGeneratorAction::GENIEGeneratorAction(const G4String& fileName)
    fCurrentEvent(0),
    fTotalEvents(0),
    fROOTFileName(fileName),
+   fInitialEvent(initialEvent),
    fParticleGun(nullptr),
    fNu(0), fCC(false),
    fELepton(0.0), fPxLepton(0.0), fPyLepton(0.0), fPzLepton(0.0),
@@ -118,7 +119,7 @@ void GENIEGeneratorAction::Initialize()
   fGenieTree->SetBranchAddress("vtxt",  &fVtxT);
   
   // Reset event counter
-  fCurrentEvent = 0;
+  fCurrentEvent = fInitialEvent;
 }
 
 bool GENIEGeneratorAction::LoadNextEvent()
@@ -132,7 +133,7 @@ bool GENIEGeneratorAction::LoadNextEvent()
   // Check if we have more events
   if (fCurrentEvent >= fTotalEvents) {
     G4cout << "Warning: Reached the end of GENIE events. Restarting from the beginning." << G4endl;
-    fCurrentEvent = 0;
+    fCurrentEvent = fInitialEvent;
   }
   
   // Get next event
@@ -158,7 +159,7 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     return;
   }
 
-  // Logical volume lookyo defered to make sure volumes exist
+  // Logical volume lookup defered to make sure volumes exist
   SetTargetVolumeByName("TPC_log");
   
   // Create a primary vertex at the neutrino interaction point
@@ -166,7 +167,7 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   G4ThreeVector vtxPos = GetRandomPositionInVolume();
   G4double vtxTime = 0;
 
-  G4cout << "Creating interaction vertex at " << vtxPos/m << G4endl;
+  //G4cout << "Creating interaction vertex at " << vtxPos/cm << " cm" << G4endl;
   
   G4PrimaryVertex* vertex = new G4PrimaryVertex(vtxPos, vtxTime);
 
@@ -183,12 +184,12 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   G4double pyl = fPyLepton * GeV;
   G4double pzl = fPxLepton * GeV;
 
-  G4cout << "Lepton PDG: " << leptonPDG << "\n"
-         << "       E:   " << el/GeV    << " GeV \n"
-         << "       px:  " << pxl/GeV   << " GeV/c \n"
-         << "       py:  " << pyl/GeV   << " GeV/c \n"
-         << "       pz:  " << pzl/GeV   << " GeV/c \n"
-         << G4endl;
+  //G4cout << "Lepton PDG: " << leptonPDG << "\n"
+  //       << "       E:   " << el/GeV    << " GeV \n"
+  //       << "       px:  " << pxl/GeV   << " GeV/c \n"
+  //       << "       py:  " << pyl/GeV   << " GeV/c \n"
+  //       << "       pz:  " << pzl/GeV   << " GeV/c \n"
+  //       << G4endl;
 
   G4PrimaryParticle* lepton = new G4PrimaryParticle(leptonDef);
   lepton->SetMomentum(pxl, pyl, pzl);
@@ -197,7 +198,7 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   // Add lepton to vertex
   vertex->SetPrimary(lepton);
 
-  G4cout << "Number of FSI hadrons:  " << fNFSI << G4endl;
+  //G4cout << "Number of FSI hadrons:  " << fNFSI << G4endl;
 
   // Create final state hadrons from the GENIE event
   for (int i = 0; i < fNFSI; ++i) {
@@ -215,12 +216,12 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     G4double pyf = fPyHadron[i] * GeV;
     G4double pzf = fPxHadron[i] * GeV;
 
-    G4cout << "Hadron " << i << " PDG: " << fPDGCodes[i] << "\n"
-           << "     E:   " << ef/GeV  << " GeV \n"
-           << "     px:  " << pxf/GeV << " GeV/c \n"
-           << "     py:  " << pyf/GeV << " GeV/c \n"
-           << "     pz:  " << pzf/GeV << " GeV/c \n"
-           << G4endl;
+    //G4cout << "Hadron " << i << " PDG: " << fPDGCodes[i] << "\n"
+    //       << "     E:   " << ef/GeV  << " GeV \n"
+    //       << "     px:  " << pxf/GeV << " GeV/c \n"
+    //       << "     py:  " << pyf/GeV << " GeV/c \n"
+    //       << "     pz:  " << pzf/GeV << " GeV/c \n"
+    //       << G4endl;
     
     // Create primary particle
     G4PrimaryParticle* hadron = new G4PrimaryParticle(hadronDef);
@@ -236,10 +237,10 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   anEvent->AddPrimaryVertex(vertex);
   
   // Print event summary
-  G4cout << "Generated Geant4 event from GENIE event #" << fCurrentEvent-1 << "\n"
-         << "Nu flavour: " << fNu << "\n"
-         << (fCC ? "CC" : "NC") << "\n"
-         << G4endl;
+  //G4cout << "Generated Geant4 event from GENIE event #" << fCurrentEvent-1 << "\n"
+  //       << "Nu flavour: " << fNu << "\n"
+  //       << (fCC ? "CC" : "NC") << "\n"
+  //       << G4endl;
 }
 
 void GENIEGeneratorAction::SetTargetVolumeByName(const G4String& volumeName)
@@ -251,8 +252,8 @@ void GENIEGeneratorAction::SetTargetVolumeByName(const G4String& volumeName)
   for (G4LogicalVolume* logicalVolume : *logicalVolumeStore) {
     if (logicalVolume->GetName() == volumeName) {
       fTargetVolume = logicalVolume;
-      G4cout << "Target volume for vertex generation set to logical volume: " 
-             << volumeName << G4endl;
+      //G4cout << "Target volume for vertex generation set to logical volume: " 
+      //       << volumeName << G4endl;
       return;
     }
   }

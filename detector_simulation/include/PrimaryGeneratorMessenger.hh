@@ -23,6 +23,7 @@ private:
   G4UIcmdWithAString*   fGeneratorTypeCmd;
   G4UIcmdWithAString*   fGenieFileNameCmd;
   G4UIcmdWithAString*   fNuWroFileNameCmd;
+  G4UIcmdWithAString*   fInitialEventCmd;
 };
 
 #endif

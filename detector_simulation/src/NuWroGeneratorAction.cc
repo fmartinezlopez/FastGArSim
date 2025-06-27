@@ -18,7 +18,7 @@
 #include "TTree.h"
 #include "TBranch.h"
 
-NuWroGeneratorAction::NuWroGeneratorAction(const G4String& fileName)
+NuWroGeneratorAction::NuWroGeneratorAction(const G4String& fileName, G4int initialEvent)
  : G4VUserPrimaryGeneratorAction(),
    fAnalysisManager(nullptr),
    fTargetVolume(nullptr),
@@ -27,6 +27,7 @@ NuWroGeneratorAction::NuWroGeneratorAction(const G4String& fileName)
    fCurrentEvent(0),
    fTotalEvents(0),
    fROOTFileName(fileName),
+   fInitialEvent(initialEvent),
    fParticleGun(nullptr)
 {
 
@@ -92,11 +93,6 @@ void NuWroGeneratorAction::Initialize()
     return;
   }
 
-  // Generate a class based on the tree structure
-  //fNuWroTree->MakeClass("NuWroData");
-  // Now you need to compile and use the generated class
-  //gROOT->ProcessLine(".L NuWroData.C+");
-
   // Get number of events in the file
   fTotalEvents = fNuWroTree->GetEntries();
   G4cout << "NuWro input file contains " << fTotalEvents << " events." << G4endl;
@@ -109,7 +105,7 @@ void NuWroGeneratorAction::Initialize()
   fNuWroTree->SetBranchAddress("e.post.z",    fPz);
   
   // Reset event counter
-  fCurrentEvent = 0;
+  fCurrentEvent = fInitialEvent;
 }
 
 bool NuWroGeneratorAction::LoadNextEvent()
@@ -123,7 +119,7 @@ bool NuWroGeneratorAction::LoadNextEvent()
   // Check if we have more events
   if (fCurrentEvent >= fTotalEvents) {
     G4cout << "Warning: Reached the end of NuWro events. Restarting from the beginning." << G4endl;
-    fCurrentEvent = 0;
+    fCurrentEvent = fInitialEvent;
   }
   
   // Get next event

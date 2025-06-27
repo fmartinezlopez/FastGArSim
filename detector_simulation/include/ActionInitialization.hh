@@ -20,12 +20,14 @@ public:
     void SetGeneratorType(const G4String& type) { fGeneratorType = type; }
     void SetGenieFileName(const G4String& fileName) { fGenieFileName = fileName; }
     void SetNuWroFileName(const G4String& fileName) { fNuWroFileName = fileName; }
+    void SetInitialEvent(const G4int& index) { fInitialEvent = index; }
     
 private:
     DetectorConstruction* fDetConstruction;
     G4String fGeneratorType;   // Type of generator: "particle", "genie", or "nuwro"
     G4String fGenieFileName;   // GENIE ROOT file name (if using genie)
     G4String fNuWroFileName;   // NuWro ROOT file name (if using nuwro)
+    G4int    fInitialEvent;
 };
 
 #endif

@@ -31,6 +31,12 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger(ActionInitialization* actio
   fNuWroFileNameCmd->SetGuidance("Set the NuWro input ROOT file name.");
   fNuWroFileNameCmd->SetParameterName("FileName", false);
   fNuWroFileNameCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  // Command to set first event index
+  fInitialEventCmd = new G4UIcmdWithAString("/generator/initialEvent", this);
+  fInitialEventCmd->SetGuidance("Set first event index.");
+  fInitialEventCmd->SetParameterName("Type", false);
+  fInitialEventCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 PrimaryGeneratorMessenger::~PrimaryGeneratorMessenger()
@@ -38,6 +44,7 @@ PrimaryGeneratorMessenger::~PrimaryGeneratorMessenger()
   delete fGeneratorTypeCmd;
   delete fGenieFileNameCmd;
   delete fNuWroFileNameCmd;
+  delete fInitialEventCmd;
   delete fDirectory;
 }
 
@@ -53,6 +60,12 @@ void PrimaryGeneratorMessenger::SetNewValue(G4UIcommand* command, G4String newVa
   }
   else if (command == fNuWroFileNameCmd) {
     fActionInitialization->SetNuWroFileName(newValue);
+    fActionInitialization->UpdatePrimaryGeneratorAction();
+  }
+  else if (command == fInitialEventCmd) {
+    G4int value = G4UIcommand::ConvertToInt(newValue);
+    G4cout << "Set initial event to " << value << G4endl;
+    fActionInitialization->SetInitialEvent(value);
     fActionInitialization->UpdatePrimaryGeneratorAction();
   }
 }

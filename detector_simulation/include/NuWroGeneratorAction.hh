@@ -21,7 +21,7 @@ class AnalysisManager;
 class NuWroGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
 public:
-  NuWroGeneratorAction(const G4String& fileName);
+  NuWroGeneratorAction(const G4String& fileName, G4int initialEvent);
   virtual ~NuWroGeneratorAction();
   
   virtual void GeneratePrimaries(G4Event*);
@@ -54,6 +54,7 @@ private:
   TTree*   fNuWroTree;
   
   // Event counters
+  G4int fInitialEvent;
   G4int fCurrentEvent;
   G4int fTotalEvents;
   
