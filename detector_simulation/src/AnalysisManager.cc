@@ -163,17 +163,17 @@ void AnalysisManager::AddTPCHit(const G4Track* track, const G4ThreeVector& pos, 
 }
 
 // Add an ECal hit to a particle
-void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double edep)
+void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddECalHit(::ECalHit(pos, edep));
+  particle->AddECalHit(::ECalHit(pos, time, edep));
 }
 
 // Add a MuID hit to a particle
-void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double edep)
+void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddMuIDHit(::MuIDHit(pos, edep));
+  particle->AddMuIDHit(::MuIDHit(pos, time, edep));
 }
 
 // Record energy deposit data from a step
@@ -190,6 +190,7 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   // Get track and position information
   G4Track* track = step->GetTrack();
   G4ThreeVector position = step->GetPreStepPoint()->GetPosition();
+  G4double time = track->GetGlobalTime();
   G4double stepSize = step->GetStepLength();
   
   // Check volume type and record appropriate hit
@@ -201,16 +202,16 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   }
   else if (volumeName.find("ECal") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is an ECal hit
-    AddECalHit(track, position, edep);
+    AddECalHit(track, position, time, edep);
   }
   else if (volumeName.find("MuID") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is a MuID hit
-    AddMuIDHit(track, position, edep);
+    AddMuIDHit(track, position, time, edep);
   }
 }
 
 // Record track information (example of another data collection method)
-void AnalysisManager::RecordTrackInfo(const G4Track* track)
+void AnalysisManager::RecordTrackInfo(const G4Track* track, G4bool end)
 {
   G4ThreeVector position = track->GetPosition();
   G4ThreeVector momentum = track->GetMomentum();
@@ -225,6 +226,16 @@ void AnalysisManager::RecordTrackInfo(const G4Track* track)
 
   // Add momentum point
   particle->GetTrajectory().AddMomPoint(momentum);
+
+  // If this is the end point of the particle add EndProcess
+  if (end) {
+    G4String endProcess = "";
+    if ( track->GetStep()->GetPostStepPoint()->GetProcessDefinedStep() ){
+      endProcess = track->GetStep()->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+    }
+    particle->SetEndProcess(endProcess);
+  }
+
 }
 
 std::map<G4int, ::Particle*> AnalysisManager::SimplifyParticleCollection()

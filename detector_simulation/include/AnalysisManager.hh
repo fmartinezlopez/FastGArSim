@@ -29,14 +29,14 @@ public:
   
   // Methods to record data
   void RecordEnergyDeposit(const G4Step* step);
-  void RecordTrackInfo(const G4Track* track);
+  void RecordTrackInfo(const G4Track* track, G4bool end=false);
 
   // Methods for Event/Particle-level data
   void BeginEvent(G4int eventID);
   void EndEvent();
   void AddTPCHit(const G4Track* track, const G4ThreeVector& pos, G4double edep, G4double step);
-  void AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double edep);
-  void AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double edep);
+  void AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep);
+  void AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep);
   Particle* GetParticle(const G4Track* track);
 
   // Setter methods

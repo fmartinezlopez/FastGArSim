@@ -68,12 +68,13 @@ namespace root {
     class ECalHit : public TObject
     {
         public:
-        ECalHit() : x(0), y(0), z(0), energyDeposit(0) {}
+        ECalHit() : x(0), y(0), z(0), time(0), energyDeposit(0) {}
         
-        ECalHit(Double_t px, Double_t py, Double_t pz, Double_t edep) 
-            : x(px), y(py), z(pz), energyDeposit(edep) {}
+        ECalHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep) 
+            : x(px), y(py), z(pz), time(t), energyDeposit(edep) {}
         
         Double_t x, y, z;
+        Double_t time;
         Double_t energyDeposit;
 
         ClassDef(ECalHit, 1)
@@ -82,12 +83,13 @@ namespace root {
     class MuIDHit : public TObject
     {
         public:
-        MuIDHit() : x(0), y(0), z(0), energyDeposit(0) {}
+        MuIDHit() : x(0), y(0), z(0), time(0), energyDeposit(0) {}
         
-        MuIDHit(Double_t px, Double_t py, Double_t pz, Double_t edep) 
-            : x(px), y(py), z(pz), energyDeposit(edep) {}
+        MuIDHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep) 
+            : x(px), y(py), z(pz), time(t), energyDeposit(edep) {}
         
         Double_t x, y, z;
+        Double_t time;
         Double_t energyDeposit;
 
         ClassDef(MuIDHit, 1)

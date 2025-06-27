@@ -112,12 +112,13 @@ private:
 class ECalHit
 {
 public:
-  ECalHit(const G4ThreeVector& pos, G4double edep) 
-    : position(pos), energyDeposit(edep) {}
+  ECalHit(const G4ThreeVector& pos, G4double t, G4double edep) 
+    : position(pos), time(t), energyDeposit(edep) {}
   
   // Copy constructor
   ECalHit(const ECalHit& other)
     : position(other.position),
+      time(other.time),
       energyDeposit(other.energyDeposit)
   {}
   
@@ -126,28 +127,32 @@ public:
   {
     if (this != &other) {
       position = other.position;
+      time = other.time;
       energyDeposit = other.energyDeposit;
     }
     return *this;
   }
   
   const G4ThreeVector& GetPosition() const { return position; }
+  G4double GetTime() const { return time; }
   G4double GetEnergyDeposit() const { return energyDeposit; }
   
 private:
   G4ThreeVector position;
+  G4double time;
   G4double energyDeposit;
 };
 
 class MuIDHit
 {
 public:
-  MuIDHit(const G4ThreeVector& pos, G4double edep) 
-    : position(pos), energyDeposit(edep) {}
+  MuIDHit(const G4ThreeVector& pos, G4double t, G4double edep) 
+    : position(pos), time(t), energyDeposit(edep) {}
   
   // Copy constructor
   MuIDHit(const MuIDHit& other)
     : position(other.position),
+      time(other.time),
       energyDeposit(other.energyDeposit)
   {}
   
@@ -156,16 +161,19 @@ public:
   {
     if (this != &other) {
       position = other.position;
+      time = other.time;
       energyDeposit = other.energyDeposit;
     }
     return *this;
   }
   
   const G4ThreeVector& GetPosition() const { return position; }
+  G4double GetTime() const { return time; }
   G4double GetEnergyDeposit() const { return energyDeposit; }
   
 private:
   G4ThreeVector position;
+  G4double time;
   G4double energyDeposit;
 };
 

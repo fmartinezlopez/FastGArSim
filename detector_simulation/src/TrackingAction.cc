@@ -37,7 +37,7 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
 {
     if (fRunAction->GetSaveOutput()) {
         if (!fAnalysisManager->GetWriteTrajectory()) {
-            fAnalysisManager->RecordTrackInfo(track);
+            fAnalysisManager->RecordTrackInfo(track, true);
         }
     }
 }
