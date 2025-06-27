@@ -43,7 +43,7 @@ add_library(ROOTDataDictLib SHARED ROOTDataDict.cxx)
 target_link_libraries(ROOTDataDictLib ${ROOT_LIBRARIES})
 set_target_properties(ROOTDataDictLib PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-                      SUFFIX ".dylib"
+                      SUFFIX ".so"
                       OUTPUT_NAME "ROOTDataDict")
 
 #----------------------------------------------------------------------------
