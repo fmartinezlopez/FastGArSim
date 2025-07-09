@@ -1,5 +1,5 @@
 #include "ActionInitialization.hh"
-#include "PrimaryGeneratorAction.hh"
+#include "GunGeneratorAction.hh"
 #include "GENIEGeneratorAction.hh"
 #include "NuWroGeneratorAction.hh"
 #include "RunAction.hh"
@@ -42,7 +42,7 @@ void ActionInitialization::Build() const
         if (fGenieFileName.empty()) {
             G4cerr << "Error: GENIE generator selected but no input file specified." << G4endl;
             G4cerr << "Falling back to default particle gun generator." << G4endl;
-            primaryGeneratorAction = new PrimaryGeneratorAction();
+            primaryGeneratorAction = new GunGeneratorAction();
         } else {
             G4cout << "Using GENIE primary generator with file: " << fGenieFileName << G4endl;
             primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName, fInitialEvent);
@@ -52,7 +52,7 @@ void ActionInitialization::Build() const
         if (fNuWroFileName.empty()) {
             G4cerr << "Error: NuWro generator selected but no input file specified." << G4endl;
             G4cerr << "Falling back to default particle gun generator." << G4endl;
-            primaryGeneratorAction = new PrimaryGeneratorAction();
+            primaryGeneratorAction = new GunGeneratorAction();
         } else {
             G4cout << "Using NuWro primary generator with file: " << fNuWroFileName << G4endl;
             primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName, fInitialEvent);
@@ -60,7 +60,7 @@ void ActionInitialization::Build() const
     } else {
         // Default or explicitly specified "particle" type
         G4cout << "Using standard particle gun generator" << G4endl;
-        primaryGeneratorAction = new PrimaryGeneratorAction();
+        primaryGeneratorAction = new GunGeneratorAction();
     }
 
     // Register the primary generator action
@@ -93,7 +93,7 @@ void ActionInitialization::UpdatePrimaryGeneratorAction() const
         if (fGenieFileName.empty()) {
             G4cerr << "Error: GENIE generator selected but no input file specified." << G4endl;
             G4cerr << "Falling back to default particle gun generator." << G4endl;
-            primaryGeneratorAction = new PrimaryGeneratorAction();
+            primaryGeneratorAction = new GunGeneratorAction();
         } else {
             G4cout << "Using GENIE primary generator with file: " << fGenieFileName << G4endl;
             primaryGeneratorAction = new GENIEGeneratorAction(fGenieFileName, fInitialEvent);
@@ -103,7 +103,7 @@ void ActionInitialization::UpdatePrimaryGeneratorAction() const
         if (fNuWroFileName.empty()) {
             G4cerr << "Error: NuWro generator selected but no input file specified." << G4endl;
             G4cerr << "Falling back to default particle gun generator." << G4endl;
-            primaryGeneratorAction = new PrimaryGeneratorAction();
+            primaryGeneratorAction = new GunGeneratorAction();
         } else {
             G4cout << "Using NuWro primary generator with file: " << fNuWroFileName << G4endl;
             primaryGeneratorAction = new NuWroGeneratorAction(fNuWroFileName, fInitialEvent);
@@ -111,7 +111,7 @@ void ActionInitialization::UpdatePrimaryGeneratorAction() const
     } else {
         // Default or explicitly specified "particle" type
         G4cout << "Using standard particle gun generator" << G4endl;
-        primaryGeneratorAction = new PrimaryGeneratorAction();
+        primaryGeneratorAction = new GunGeneratorAction();
     }
     
     // Update the primary generator action
