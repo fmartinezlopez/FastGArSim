@@ -1,2 +1,5 @@
 .DS_Store
 detector_simulation/build/
+*.root
+*.png
+*.pdf
