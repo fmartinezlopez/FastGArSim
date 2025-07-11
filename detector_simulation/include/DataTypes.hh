@@ -304,9 +304,10 @@ public:
     return *this;
   }
   
+  void SetEventID(const G4int id) { eventID = id; }
   void AddParticle(const Particle& p) { particles.push_back(p); }
-  G4int GetEventID() const { return eventID; }
   
+  G4int GetEventID() const { return eventID; }
   // Add const version
   const std::vector<Particle>& GetParticles() const { return particles; }
   std::vector<Particle>& GetParticles() { return particles; }

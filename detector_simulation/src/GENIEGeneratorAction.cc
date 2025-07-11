@@ -76,7 +76,8 @@ void GENIEGeneratorAction::Initialize()
 {
 
   // Open GENIE output ROOT file
-  fGenieFile = new TFile(fROOTFileName.c_str(), "READ");
+  //fGenieFile = new TFile(fROOTFileName.c_str(), "READ");
+  fGenieFile = TFile::Open(fROOTFileName.c_str()); // This pattern allows xrootd
   if (!fGenieFile || fGenieFile->IsZombie()) {
     G4cerr << "Error: Could not open GENIE ROOT file " << fROOTFileName << G4endl;
     delete fGenieFile;
@@ -235,6 +236,9 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   
   // Add vertex to event
   anEvent->AddPrimaryVertex(vertex);
+
+  // Update eventID in AnalysisManager
+  fAnalysisManager->UpdateEventID(fCurrentEvent-1);
   
   // Print event summary
   //G4cout << "Generated Geant4 event from GENIE event #" << fCurrentEvent-1 << "\n"

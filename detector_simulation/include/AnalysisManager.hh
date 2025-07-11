@@ -26,6 +26,9 @@ public:
   void Book();
   void Save();
   void Close();
+
+  // Method to update eventID when reading external input file(s)
+  void UpdateEventID(const G4int id);
   
   // Methods to record data
   void RecordEnergyDeposit(const G4Step* step);
@@ -60,8 +63,9 @@ private:
   G4String fOutputFileName;
   G4double fEnergyCut;
 
-  // Current event data (Geant4 types)
+  // Current event data
   Event* fCurrentEvent;
+  G4int fCurrentEventID;
   std::map<G4int, Particle*> fTrackMap;  // Maps trackID to Particle
 
   // ROOT file and tree
@@ -69,7 +73,7 @@ private:
   TTree* fEventTree;
   root::Event* fStoredEvent;  // ROOT Event object that will be stored in the tree
   
-  // Configuration
+  // Configuration parameters
   G4bool fWriteTrajectory;
   G4bool fWriteTPCHits;
   G4bool fWriteECalHits;

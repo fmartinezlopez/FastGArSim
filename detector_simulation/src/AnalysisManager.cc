@@ -27,6 +27,7 @@ AnalysisManager::AnalysisManager()
 : fOutputFileName("output"),
   fEnergyCut(0.001*MeV),
   fCurrentEvent(nullptr),
+  fCurrentEventID(-1),
   fRootFile(nullptr),
   fEventTree(nullptr),
   fStoredEvent(nullptr),
@@ -96,6 +97,9 @@ void AnalysisManager::Close()
 // Begin a new event
 void AnalysisManager::BeginEvent(G4int eventID)
 {
+  // Check if we're modifying the event numbers
+  if (fCurrentEventID >= 0) eventID = fCurrentEventID;
+
   if (eventID < 10 || (eventID < 100 && eventID%10 == 0) || eventID%100 == 0) {
     G4cout << "Processing event: " << eventID << G4endl;
   }
@@ -176,6 +180,12 @@ void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos,
   particle->AddMuIDHit(::MuIDHit(pos, time, edep));
 }
 
+// Update eventID if reading external file(s)
+void AnalysisManager::UpdateEventID(const G4int id)
+{
+  fCurrentEventID = id;
+}
+
 // Record energy deposit data from a step
 void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
 {
@@ -210,7 +220,7 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   }
 }
 
-// Record track information (example of another data collection method)
+// Record track information
 void AnalysisManager::RecordTrackInfo(const G4Track* track, G4bool end)
 {
   G4ThreeVector position = track->GetPosition();
@@ -229,9 +239,10 @@ void AnalysisManager::RecordTrackInfo(const G4Track* track, G4bool end)
 
   // If this is the end point of the particle add EndProcess
   if (end) {
-    G4String endProcess = "";
-    if ( track->GetStep()->GetPostStepPoint()->GetProcessDefinedStep() ){
-      endProcess = track->GetStep()->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+    G4String endProcess = "unknown";
+    auto process = track->GetStep()->GetPostStepPoint()->GetProcessDefinedStep();
+    if ( process ){
+      endProcess = process->GetProcessName();
     }
     particle->SetEndProcess(endProcess);
   }
