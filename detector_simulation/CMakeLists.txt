@@ -35,7 +35,8 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 # Generate ROOT dictionary for ROOTDataTypes (without Geant4 dependencies)
 ROOT_GENERATE_DICTIONARY(ROOTDataDict
                          ${PROJECT_SOURCE_DIR}/include/ROOTDataTypes.hh
-                         LINKDEF ${PROJECT_SOURCE_DIR}/include/ROOTDataTypesLinkDef.h)
+                         LINKDEF ${PROJECT_SOURCE_DIR}/include/ROOTDataTypesLinkDef.h
+                         OPTIONS -inlineInputHeader)  # This embeds header content
 
 #----------------------------------------------------------------------------
 # Create a shared library with the dictionary
