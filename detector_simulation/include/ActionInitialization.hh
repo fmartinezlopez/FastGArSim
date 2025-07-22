@@ -4,12 +4,10 @@
 #include "G4VUserActionInitialization.hh"
 #include "globals.hh"
 
-class DetectorConstruction;
-
 class ActionInitialization : public G4VUserActionInitialization
 {
 public:
-    ActionInitialization(DetectorConstruction* detConstruction);
+    ActionInitialization();
     virtual ~ActionInitialization();
     
     virtual void BuildForMaster() const;
@@ -23,7 +21,6 @@ public:
     void SetInitialEvent(const G4int& index) { fInitialEvent = index; }
     
 private:
-    DetectorConstruction* fDetConstruction;
     G4String fGeneratorType;   // Type of generator: "particle", "genie", or "nuwro"
     G4String fGenieFileName;   // GENIE ROOT file name (if using genie)
     G4String fNuWroFileName;   // NuWro ROOT file name (if using nuwro)

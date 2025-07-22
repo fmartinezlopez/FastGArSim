@@ -1,7 +1,6 @@
 #include "SteppingAction.hh"
 #include "EventAction.hh"
 #include "RunAction.hh"
-#include "DetectorConstruction.hh"
 #include "AnalysisManager.hh"
 
 #include "G4Step.hh"
@@ -15,25 +14,15 @@
 #include "G4TrajectoryPoint.hh"
 
 SteppingAction::SteppingAction(EventAction* eventAction,
-                               RunAction* runAction,
-                               DetectorConstruction* detConstruction)
+                               RunAction* runAction)
 : G4UserSteppingAction(),
   fEventAction(eventAction),
   fRunAction(runAction),
-  fDetConstruction(detConstruction),
-  fAnalysisManager(nullptr),
-  fTPCLogical(nullptr),
-  fECalLogical(nullptr),
-  fMuIDLogical(nullptr)
+  fAnalysisManager(nullptr)
 {
 
     // Get analysis manager
     fAnalysisManager = AnalysisManager::GetInstance();
-
-    // Get "sensitive" logical volumes for identification
-    fTPCLogical  = fDetConstruction->GetTPCSensLogical();
-    fECalLogical = fDetConstruction->GetECalSensLogical();
-    fMuIDLogical = fDetConstruction->GetMuIDSensLogical();
 
 }
 

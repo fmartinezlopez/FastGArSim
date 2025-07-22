@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     runManager->SetUserInitialization(physicsList);
     
     // Action initialization
-    auto actionInitialization = new ActionInitialization(detConstruction);
+    auto actionInitialization = new ActionInitialization();
     runManager->SetUserInitialization(actionInitialization);
 
     // Create the messenger to allow macro control of generator type

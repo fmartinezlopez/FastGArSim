@@ -6,11 +6,9 @@
 #include "EventAction.hh"
 #include "TrackingAction.hh"
 #include "SteppingAction.hh"
-#include "DetectorConstruction.hh"
 
-ActionInitialization::ActionInitialization(DetectorConstruction* detConstruction)
+ActionInitialization::ActionInitialization()
 : G4VUserActionInitialization(),
-  fDetConstruction(detConstruction),
   fGeneratorType("particle"),
   fGenieFileName(""),
   fNuWroFileName(""),
@@ -79,7 +77,7 @@ void ActionInitialization::Build() const
     SetUserAction(trackingAction);
     
     // Create and register stepping action
-    SteppingAction* steppingAction = new SteppingAction(eventAction, runAction, fDetConstruction);
+    SteppingAction* steppingAction = new SteppingAction(eventAction, runAction);
     SetUserAction(steppingAction);
 }
 

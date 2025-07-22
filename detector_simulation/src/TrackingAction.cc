@@ -1,7 +1,6 @@
 #include "TrackingAction.hh"
 #include "EventAction.hh"
 #include "RunAction.hh"
-#include "DetectorConstruction.hh"
 #include "AnalysisManager.hh"
 
 #include "G4RunManager.hh"

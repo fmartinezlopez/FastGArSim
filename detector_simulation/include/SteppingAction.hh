@@ -7,13 +7,12 @@
 
 class EventAction;
 class RunAction;
-class DetectorConstruction;
 class AnalysisManager;
 
 class SteppingAction : public G4UserSteppingAction
 {
 public:
-    SteppingAction(EventAction* eventAction, RunAction* runAction, DetectorConstruction* detConstruction);
+    SteppingAction(EventAction* eventAction, RunAction* runAction);
     virtual ~SteppingAction();
     
     // Method from base class
@@ -22,13 +21,8 @@ public:
 private:
     EventAction* fEventAction;
     RunAction* fRunAction;
-    DetectorConstruction* fDetConstruction;
     AnalysisManager* fAnalysisManager;
-    
-    // Logical volumes for identification
-    G4LogicalVolume* fTPCLogical;
-    G4LogicalVolume* fECalLogical;
-    G4LogicalVolume* fMuIDLogical;
+
 };
 
 #endif
