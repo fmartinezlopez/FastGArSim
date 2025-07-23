@@ -17,6 +17,12 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 {
 public:
 
+    // Enum for geometry types
+    enum GeometryType {
+        kGArLike, // magnetised GAr TPC + ECal + MuID
+        kLArLike  // modular LAr TPC
+    };
+
     DetectorConstruction();
     virtual ~DetectorConstruction();
 
@@ -31,6 +37,7 @@ public:
     G4LogicalVolume* GetMuIDSensLogical() const { return fMuIDScintillatorLogical; }
     
     // Messenger methods for configurable parameters
+    void SetGeometryType(G4String type);
     void SetTPCRadius(G4double radius);
     void SetTPCLength(G4double length);
     void SetECalAbsorberThickness(G4double thickness);
@@ -39,18 +46,28 @@ public:
     void SetMuIDAbsorberThickness(G4double thickness);
     void SetMuIDScintillatorThickness(G4double thickness);
     void SetMuIDLayers(G4int layers);
+    void SetLArTPCLength(G4double length);
+    void SetLArTPCWidth(G4double width);
+    void SetLArTPCDepth(G4double depth);
     
 private:
 
     G4bool fGeometryInitialized;
+    GeometryType fGeometryType;
 
     // Methods to create detector components
     void DefineMaterials();
     G4VPhysicalVolume* ConstructWorld();
+
+    // GAr detector construction methods
+    void ConstructGArDetector();
     void ConstructFieldEnclosure();
     void ConstructTPC();
     void ConstructECal();
     void ConstructMuID();
+
+    // LAr detector construction methods
+    void ConstructLArDetector();
     
     // Helper construction methods
     void ConstructSamplingBarrel(G4String baseName,                       // base name for volumes
@@ -89,11 +106,12 @@ private:
     
     // Materials
     G4Material* fWorldMaterial;
-    G4Material* fTPCMaterial;
+    G4Material* fGArTPCMaterial;
     G4Material* fECalAbsorberMaterial;
     G4Material* fECalScintillatorMaterial;
     G4Material* fMuIDScintillatorMaterial;
     G4Material* fMuIDAbsorberMaterial;
+    G4Material* fLArTPCMaterial;
     
     // Logical volumes
     G4LogicalVolume* fWorldLogical;
@@ -104,11 +122,13 @@ private:
     G4LogicalVolume* fECalScintillatorLogical;
     G4LogicalVolume* fMuIDLogical;
     G4LogicalVolume* fMuIDScintillatorLogical;
+    G4LogicalVolume* fLArTPCLogical;
     
     // Physical volumes
     G4VPhysicalVolume* fWorldPhysical;
     G4VPhysicalVolume* fFieldPhysical;
     G4VPhysicalVolume* fTPCPhysical;
+    G4VPhysicalVolume* fLArTPCPhysical;
 
     // Magnetic field
     G4UniformMagField* fMagneticField;
@@ -128,6 +148,9 @@ private:
     G4double fMuIDScintillatorThickness;
     G4int    fMuIDNumSides;
     G4int    fMuIDLayers;
+    G4double fLArTPCLength;
+    G4double fLArTPCWidth;
+    G4double fLArTPCDepth;
 
     // Derived configuration parameters
     G4double fECalLayerThickness;

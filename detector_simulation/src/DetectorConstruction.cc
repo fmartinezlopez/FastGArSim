@@ -25,16 +25,22 @@
 
 DetectorConstruction::DetectorConstruction()
 : G4VUserDetectorConstruction(),
-  fWorldLogical(nullptr), fFieldLogical(nullptr), fTPCLogical(nullptr),
+  fGeometryType(kGArLike),
+  fWorldLogical(nullptr),
+  fFieldLogical(nullptr), fTPCLogical(nullptr),
   fECalBarrelLogical(nullptr), fECalEndcapsLogical(nullptr), fECalScintillatorLogical(nullptr),
   fMuIDLogical(nullptr), fMuIDScintillatorLogical(nullptr),
-  fWorldPhysical(nullptr), fFieldPhysical(nullptr), fTPCPhysical(nullptr),
+  fLArTPCLogical(nullptr),
+  fWorldPhysical(nullptr),
+  fFieldPhysical(nullptr), fTPCPhysical(nullptr),
+  fLArTPCPhysical(nullptr),
   fMagneticField(nullptr), fMagneticFieldStrength(0.5*tesla),
   fTPCRadius(250.0*cm), fTPCLength(500.0*cm),
   fECalBarrelGap(20.0*cm), fECalEndcapGap(25.0*cm),
   fECalAbsorberThickness(5.0*mm), fECalScintillatorThickness(10.0*mm), fECalNumSides(12), fECalLayers(42),
   fMuIDBarrelGap(50.0*cm),
   fMuIDAbsorberThickness(10.0*cm), fMuIDScintillatorThickness(2.0*cm), fMuIDNumSides(21), fMuIDLayers(3),
+  fLArTPCLength(500.0*cm), fLArTPCWidth(300.0*cm), fLArTPCDepth(700.0*cm),
   fMessenger(nullptr),
   fGeometryInitialized(false)
 {
@@ -79,7 +85,6 @@ G4bool DetectorConstruction::UpdateGeometry()
 
 void DetectorConstruction::DefineMaterials()
 {
-
     // World material definition
 	G4NistManager *nistManager = G4NistManager::Instance();
 	
@@ -104,12 +109,12 @@ void DetectorConstruction::DefineMaterials()
 	G4Element* Ar = new G4Element("Argon",    "Ar", z = 18., 39.948*g/mole);
 
 	// Define gas material
-	fTPCMaterial = new G4Material("P10", p10Density*fPressure/fAtmPressure, nel = 3, kStateGas, fTemperature*kelvin, fPressure*bar);
+	fGArTPCMaterial = new G4Material("P10", p10Density*fPressure/fAtmPressure, nel = 3, kStateGas, fTemperature*kelvin, fPressure*bar);
 
 	// Add elements to material
-	fTPCMaterial->AddElement(H,  fractionmass = 0.011);
-	fTPCMaterial->AddElement(C,  fractionmass = 0.032);
-	fTPCMaterial->AddElement(Ar, fractionmass = 0.957);
+	fGArTPCMaterial->AddElement(H,  fractionmass = 0.011);
+	fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
+	fGArTPCMaterial->AddElement(Ar, fractionmass = 0.957);
 
     // Materials for ECal
     fECalAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_Pb");
@@ -118,16 +123,37 @@ void DetectorConstruction::DefineMaterials()
     // Materials for MuID
     fMuIDAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
     fMuIDScintillatorMaterial = nistManager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
-    
+
+    // Material for LAr TPC
+    fLArTPCMaterial = nistManager->FindOrBuildMaterial("G4_lAr"); // use pre-defined LAr material
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
     // Construct world volume
     fWorldPhysical = ConstructWorld();
-    ConstructFieldEnclosure();
 
+    // Build detector based on selected geometry type
+    switch(fGeometryType) {
+        case kGArLike:
+            ConstructGArDetector();
+            break;
+        case kLArLike:
+            ConstructLArDetector();
+            break;
+        default:
+            G4cerr << "Unknown geometry type!" << G4endl;
+            break;
+    }
+
+    fGeometryInitialized = true;
+    return fWorldPhysical;
+}
+
+void DetectorConstruction::ConstructGArDetector()
+{
     // Construct detector components
+    ConstructFieldEnclosure();
     ConstructTPC();
     ConstructECal();
     ConstructMuID();
@@ -139,19 +165,48 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     fECalBarrelLogical->SetUserLimits(limitsCaloSteps);
     fECalEndcapsLogical->SetUserLimits(limitsCaloSteps);
     fMuIDLogical->SetUserLimits(limitsCaloSteps);
+}
+
+void DetectorConstruction::ConstructLArDetector()
+{
+    // Create cubic LAr box
+    G4Box* tpcSolid = new G4Box("LArTPC", fLArTPCLength/2, fLArTPCWidth/2, fLArTPCDepth/2);
+    fLArTPCLogical = new G4LogicalVolume(tpcSolid, fLArTPCMaterial, "TPC_log");
+
+    // Set visualization attributes
+    G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(0.0, 0.5, 1.0, 0.3));
+    tpcVisAtt->SetVisibility(true);
+    fLArTPCLogical->SetVisAttributes(tpcVisAtt);
+
+    // Place TPC in world
+    fLArTPCPhysical = new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fLArTPCLogical, 
+                                        "TPC_phys", fWorldLogical, false, 0);
     
-    fGeometryInitialized = true;
-    return fWorldPhysical;
+    // Set user limits for tracking
+    G4UserLimits* limitsTPCSteps = new G4UserLimits(1.0*mm);
+    fLArTPCLogical->SetUserLimits(limitsTPCSteps);
 }
 
 G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
 {
-    // Calculate world size based on detector dimensions
-    G4double worldSizeXY = 2.5 * (fTPCRadius + fECalTotalThickness + fMuIDTotalThickness);
-    G4double worldSizeZ  = 2.5 * (fTPCLength/2 + fECalTotalThickness + fMuIDTotalThickness);
+    G4double worldSizeX, worldSizeY, worldSizeZ;
+
+    if (fGeometryType == kGArLike) {
+        // Calculate world size based on GAr detector dimensions
+        worldSizeX = 2.5 * (fTPCRadius + fECalTotalThickness + fMuIDTotalThickness);
+        worldSizeY = worldSizeX;
+        worldSizeZ = 2.5 * (fTPCLength/2 + fECalTotalThickness + fMuIDTotalThickness);
+    } else if (fGeometryType == kLArLike) {
+        // Calculate world size based on LAr detector dimensions
+        worldSizeX = 2.0 * fLArTPCLength;
+        worldSizeY = 2.0 * fLArTPCWidth;
+        worldSizeZ = 2.0 * fLArTPCDepth;
+    } else {
+        G4cerr << "Unknown geometry type!" << G4endl;
+    }
     
     // Create world box
-    G4Box* worldSolid = new G4Box("World", worldSizeXY, worldSizeXY, worldSizeZ);
+    G4Box* worldSolid = new G4Box("World", worldSizeX, worldSizeY, worldSizeZ);
     fWorldLogical = new G4LogicalVolume(worldSolid, fWorldMaterial, "World_log");
     
     // Set world visualization attributes
@@ -189,8 +244,8 @@ void DetectorConstruction::ConstructTPC()
 {
 
     // Create TPC cylindrical volume
-    G4Tubs* tpcSolid = new G4Tubs("TPC", 0, fTPCRadius, fTPCLength/2, 0, twopi);
-    fTPCLogical = new G4LogicalVolume(tpcSolid, fTPCMaterial, "TPC_log");
+    G4Tubs* tpcSolid = new G4Tubs("GArTPC", 0, fTPCRadius, fTPCLength/2, 0, twopi);
+    fTPCLogical = new G4LogicalVolume(tpcSolid, fGArTPCMaterial, "TPC_log");
     
     // Set TPC visualization attributes
     G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
@@ -419,27 +474,48 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
 
 void DetectorConstruction::ConstructSDandField()
 {
+    if (fGeometryType == kGArLike) {
+        // Create a uniform magnetic field
+        G4ThreeVector fieldValue = G4ThreeVector(0., 0., -fMagneticFieldStrength);
+        fMagneticField = new G4UniformMagField(fieldValue);
 
-    // Create a uniform magnetic field
-    G4ThreeVector fieldValue = G4ThreeVector(0., 0., -fMagneticFieldStrength);
-    fMagneticField = new G4UniformMagField(fieldValue);
+        // Create a field manager
+        G4FieldManager* fieldManager = new G4FieldManager(fMagneticField);
 
-    // Create a field manager
-    G4FieldManager* fieldManager = new G4FieldManager(fMagneticField);
-
-    // Assign local magnetic field to logical volume
-    fFieldLogical->SetFieldManager(fieldManager, true);
-
+        // Assign local magnetic field to logical volume
+        fFieldLogical->SetFieldManager(fieldManager, true);
+    }
+    // No magnetic field for LAr TPC
 }
 
 // Messenger methods implementation
+void DetectorConstruction::SetGeometryType(G4String type)
+{
+    if (type == "gar") {
+        fGeometryType = kGArLike;
+        G4cout << "Geometry set to ND-GAr-like detector (magentised GAr TPC + ECal + MuID)" << G4endl;
+    } else if (type == "lar") {
+        fGeometryType = kLArLike;
+         G4cout << "Geometry set to ND-LAr-like detector" << G4endl;
+    } else {
+        G4cerr << "Unknown geometry type: " << type << G4endl;
+        G4cerr << "Valid options are: 'gar' or 'lar'" << G4endl;
+        return;
+    }
+
+    if (fGeometryInitialized) {
+        UpdateGeometry();
+    }
+}
+
 void DetectorConstruction::SetTPCRadius(G4double radius)
 {
     fTPCRadius = radius;
     G4cout << "TPC radius set to " << fTPCRadius/cm << " cm" << G4endl;
 
-    UpdateGeometry();
-
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetTPCLength(G4double length)
@@ -447,8 +523,9 @@ void DetectorConstruction::SetTPCLength(G4double length)
     fTPCLength = length;
     G4cout << "TPC length set to " << fTPCLength/cm << " cm" << G4endl;
 
-    UpdateGeometry();
-
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetECalAbsorberThickness(G4double thickness)
@@ -456,7 +533,9 @@ void DetectorConstruction::SetECalAbsorberThickness(G4double thickness)
     fECalAbsorberThickness = thickness;
     G4cout << "ECal absorber thickness set to " << fECalAbsorberThickness/mm << " mm" << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetECalScintillatorThickness(G4double thickness)
@@ -464,7 +543,9 @@ void DetectorConstruction::SetECalScintillatorThickness(G4double thickness)
     fECalScintillatorThickness = thickness;
     G4cout << "ECal scintillator thickness set to " << fECalScintillatorThickness/mm << " mm" << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetECalLayers(G4int layers)
@@ -472,7 +553,9 @@ void DetectorConstruction::SetECalLayers(G4int layers)
     fECalLayers = layers;
     G4cout << "ECal layers set to " << fECalLayers << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetMuIDAbsorberThickness(G4double thickness)
@@ -480,7 +563,9 @@ void DetectorConstruction::SetMuIDAbsorberThickness(G4double thickness)
     fMuIDAbsorberThickness = thickness;
     G4cout << "MuID absorber thickness set to " << fMuIDAbsorberThickness/cm << " cm" << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetMuIDScintillatorThickness(G4double thickness)
@@ -488,7 +573,9 @@ void DetectorConstruction::SetMuIDScintillatorThickness(G4double thickness)
     fMuIDScintillatorThickness = thickness;
     G4cout << "MuID scintillator thickness set to " << fMuIDScintillatorThickness/cm << " cm" << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::SetMuIDLayers(G4int layers)
@@ -496,7 +583,39 @@ void DetectorConstruction::SetMuIDLayers(G4int layers)
     fMuIDLayers = layers;
     G4cout << "MuID layers set to " << fMuIDLayers << G4endl;
 
-    UpdateGeometry();
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArTPCLength(G4double length)
+{
+    fLArTPCLength = length;
+    G4cout << "LAr TPC length set to " << fLArTPCLength/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArTPCWidth(G4double width)
+{
+    fLArTPCWidth = width;
+    G4cout << "LAr TPC width set to " << fLArTPCWidth/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArTPCDepth(G4double depth)
+{
+    fLArTPCDepth = depth;
+    G4cout << "LAr TPC depth set to " << fLArTPCDepth/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
 }
 
 void DetectorConstruction::DefineCommands()

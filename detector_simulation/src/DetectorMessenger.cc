@@ -2,8 +2,9 @@
 #include "DetectorConstruction.hh"
 
 #include "G4UIdirectory.hh"
-#include "G4UIcmdWithADoubleAndUnit.hh"
+#include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWithAnInteger.hh"
+#include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4SystemOfUnits.hh"
 
 DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
@@ -12,6 +13,15 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
 {
   fDetectorDir = new G4UIdirectory("/detector/");
   fDetectorDir->SetGuidance("Detector construction control");
+
+  // Geometry selection command
+  fGeometryCmd = new G4UIcmdWithAString("/detector/setGeometry", this);
+  fGeometryCmd->SetGuidance("Select detector geometry type");
+  fGeometryCmd->SetGuidance("  gar : GAr TPC + ECal + MuID");
+  fGeometryCmd->SetGuidance("  lar : LAr TPC");
+  fGeometryCmd->SetParameterName("GeometryType", false);
+  fGeometryCmd->SetCandidates("gar lar");
+  fGeometryCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
   
   // TPC commands
   fTPCRadiusCmd = new G4UIcmdWithADoubleAndUnit("/detector/TPCRadius", this);
@@ -69,10 +79,33 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fMuIDLayersCmd->SetParameterName("Layers", false);
   fMuIDLayersCmd->SetRange("Layers>0");
   fMuIDLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  // LArTPC commands
+  fLArTPCLengthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCLength", this);
+  fLArTPCLengthCmd->SetGuidance("Set LAr TPC length");
+  fLArTPCLengthCmd->SetParameterName("LArTPCLength", false);
+  fLArTPCLengthCmd->SetUnitCategory("Length");
+  fLArTPCLengthCmd->SetRange("Size>0.");
+  fLArTPCLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArTPCWidthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCWidth", this);
+  fLArTPCWidthCmd->SetGuidance("Set LAr TPC width");
+  fLArTPCWidthCmd->SetParameterName("LArTPCWidth", false);
+  fLArTPCWidthCmd->SetUnitCategory("Length");
+  fLArTPCWidthCmd->SetRange("Size>0.");
+  fLArTPCWidthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArTPCDepthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCDepth", this);
+  fLArTPCDepthCmd->SetGuidance("Set LAr TPC depth");
+  fLArTPCDepthCmd->SetParameterName("LArTPCDepth", false);
+  fLArTPCDepthCmd->SetUnitCategory("Length");
+  fLArTPCDepthCmd->SetRange("Size>0.");
+  fLArTPCDepthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
 {
+  delete fGeometryCmd;
   delete fTPCRadiusCmd;
   delete fTPCLengthCmd;
   delete fECalAbsorberThicknessCmd;
@@ -81,12 +114,18 @@ DetectorMessenger::~DetectorMessenger()
   delete fMuIDAbsorberThicknessCmd;
   delete fMuIDScintillatorThicknessCmd;
   delete fMuIDLayersCmd;
+  delete fLArTPCLengthCmd;
+  delete fLArTPCWidthCmd;
+  delete fLArTPCDepthCmd;
   delete fDetectorDir;
 }
 
 void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 {
-  if (command == fTPCRadiusCmd) {
+  if (command == fGeometryCmd) {
+    fDetector->SetGeometryType(newValue);
+  }
+  else if (command == fTPCRadiusCmd) {
     fDetector->SetTPCRadius(fTPCRadiusCmd->GetNewDoubleValue(newValue));
   } 
   else if (command == fTPCLengthCmd) {
@@ -109,5 +148,14 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   }
   else if (command == fMuIDLayersCmd) {
     fDetector->SetMuIDLayers(fMuIDLayersCmd->GetNewIntValue(newValue));
+  }
+  else if (command == fLArTPCLengthCmd) {
+    fDetector->SetLArTPCLength(fLArTPCLengthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArTPCWidthCmd) {
+    fDetector->SetLArTPCWidth(fLArTPCWidthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArTPCDepthCmd) {
+    fDetector->SetLArTPCDepth(fLArTPCDepthCmd->GetNewDoubleValue(newValue));
   }
 }

@@ -6,8 +6,9 @@
 
 class DetectorConstruction;
 class G4UIdirectory;
-class G4UIcmdWithADoubleAndUnit;
+class G4UIcmdWithAString;
 class G4UIcmdWithAnInteger;
+class G4UIcmdWithADoubleAndUnit;
 
 class DetectorMessenger: public G4UImessenger
 {
@@ -21,6 +22,7 @@ class DetectorMessenger: public G4UImessenger
     DetectorConstruction* fDetector;
     
     G4UIdirectory*             fDetectorDir;
+    G4UIcmdWithAString*        fGeometryCmd;
     G4UIcmdWithADoubleAndUnit* fTPCRadiusCmd;
     G4UIcmdWithADoubleAndUnit* fTPCLengthCmd;
     G4UIcmdWithADoubleAndUnit* fECalAbsorberThicknessCmd;
@@ -29,6 +31,9 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fMuIDAbsorberThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fMuIDScintillatorThicknessCmd;
     G4UIcmdWithAnInteger*      fMuIDLayersCmd;
+    G4UIcmdWithADoubleAndUnit* fLArTPCLengthCmd;
+    G4UIcmdWithADoubleAndUnit* fLArTPCWidthCmd;
+    G4UIcmdWithADoubleAndUnit* fLArTPCDepthCmd;
 };
 
 #endif
