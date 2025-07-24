@@ -81,26 +81,65 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fMuIDLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // LArTPC commands
-  fLArTPCLengthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCLength", this);
-  fLArTPCLengthCmd->SetGuidance("Set LAr TPC length");
-  fLArTPCLengthCmd->SetParameterName("LArTPCLength", false);
-  fLArTPCLengthCmd->SetUnitCategory("Length");
-  fLArTPCLengthCmd->SetRange("Size>0.");
-  fLArTPCLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fLArNModulesXCmd = new G4UIcmdWithAnInteger("/detector/LArNModulesX", this);
+  fLArNModulesXCmd->SetGuidance("Set number of LAr modules in X direction");
+  fLArNModulesXCmd->SetParameterName("LArNModuleX", false);
+  fLArNModulesXCmd->SetRange("LArNModuleX>0");
+  fLArNModulesXCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-  fLArTPCWidthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCWidth", this);
-  fLArTPCWidthCmd->SetGuidance("Set LAr TPC width");
-  fLArTPCWidthCmd->SetParameterName("LArTPCWidth", false);
-  fLArTPCWidthCmd->SetUnitCategory("Length");
-  fLArTPCWidthCmd->SetRange("Size>0.");
-  fLArTPCWidthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fLArNModulesYCmd = new G4UIcmdWithAnInteger("/detector/LArNModulesY", this);
+  fLArNModulesYCmd->SetGuidance("Set number of LAr modules in Y direction");
+  fLArNModulesYCmd->SetParameterName("LArNModuleY", false);
+  fLArNModulesYCmd->SetRange("LArNModuleY>0");
+  fLArNModulesYCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-  fLArTPCDepthCmd= new G4UIcmdWithADoubleAndUnit("/detector/LArTPCDepth", this);
-  fLArTPCDepthCmd->SetGuidance("Set LAr TPC depth");
-  fLArTPCDepthCmd->SetParameterName("LArTPCDepth", false);
-  fLArTPCDepthCmd->SetUnitCategory("Length");
-  fLArTPCDepthCmd->SetRange("Size>0.");
-  fLArTPCDepthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fLArNModulesZCmd = new G4UIcmdWithAnInteger("/detector/LArNModulesZ", this);
+  fLArNModulesZCmd->SetGuidance("Set number of LAr modules in Z direction");
+  fLArNModulesZCmd->SetParameterName("LArNModuleZ", false);
+  fLArNModulesZCmd->SetRange("LArNModuleZ>0");
+  fLArNModulesZCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArModuleLengthCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArModuleLength", this);
+  fLArModuleLengthCmd->SetGuidance("Set LAr Module length");
+  fLArModuleLengthCmd->SetParameterName("LArModuleLength", false);
+  fLArModuleLengthCmd->SetUnitCategory("Length");
+  fLArModuleLengthCmd->SetRange("LArModuleLength>0.");
+  fLArModuleLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArModuleWidthCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArModuleWidth", this);
+  fLArModuleWidthCmd->SetGuidance("Set LAr Module width");
+  fLArModuleWidthCmd->SetParameterName("LArModuleWidth", false);
+  fLArModuleWidthCmd->SetUnitCategory("Length");
+  fLArModuleWidthCmd->SetRange("LArModuleWidth>0.");
+  fLArModuleWidthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArModuleDepthCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArModuleDepth", this);
+  fLArModuleDepthCmd->SetGuidance("Set LAr Module depth");
+  fLArModuleDepthCmd->SetParameterName("LArModuleDepth", false);
+  fLArModuleDepthCmd->SetUnitCategory("Length");
+  fLArModuleDepthCmd->SetRange("LArModuleDepth>0.");
+  fLArModuleDepthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArModuleGapCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArModuleGap", this);
+  fLArModuleGapCmd->SetGuidance("Set LAr Module Gap");
+  fLArModuleGapCmd->SetParameterName("LArModuleGap", false);
+  fLArModuleGapCmd->SetUnitCategory("Length");
+  fLArModuleGapCmd->SetRange("LArModuleGap>0.");
+  fLArModuleGapCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArInsulationThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArInsulationThickness", this);
+  fLArInsulationThicknessCmd->SetGuidance("Set LAr Module Insulation Thickness");
+  fLArInsulationThicknessCmd->SetParameterName("LArInsulationThickness", false);
+  fLArInsulationThicknessCmd->SetUnitCategory("Length");
+  fLArInsulationThicknessCmd->SetRange("LArInsulationThickness>0.");
+  fLArInsulationThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArCryostatThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArCryostatThickness", this);
+  fLArCryostatThicknessCmd->SetGuidance("Set LAr Cryostat Thickness");
+  fLArCryostatThicknessCmd->SetParameterName("LArCryostatThickness", false);
+  fLArCryostatThicknessCmd->SetUnitCategory("Length");
+  fLArCryostatThicknessCmd->SetRange("LArCryostatThickness>0.");
+  fLArCryostatThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -114,9 +153,15 @@ DetectorMessenger::~DetectorMessenger()
   delete fMuIDAbsorberThicknessCmd;
   delete fMuIDScintillatorThicknessCmd;
   delete fMuIDLayersCmd;
-  delete fLArTPCLengthCmd;
-  delete fLArTPCWidthCmd;
-  delete fLArTPCDepthCmd;
+  delete fLArNModulesXCmd;
+  delete fLArNModulesYCmd;
+  delete fLArNModulesZCmd;
+  delete fLArModuleLengthCmd;
+  delete fLArModuleWidthCmd;
+  delete fLArModuleDepthCmd;
+  delete fLArModuleGapCmd;
+  delete fLArInsulationThicknessCmd;
+  delete fLArCryostatThicknessCmd;
   delete fDetectorDir;
 }
 
@@ -149,13 +194,31 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   else if (command == fMuIDLayersCmd) {
     fDetector->SetMuIDLayers(fMuIDLayersCmd->GetNewIntValue(newValue));
   }
-  else if (command == fLArTPCLengthCmd) {
-    fDetector->SetLArTPCLength(fLArTPCLengthCmd->GetNewDoubleValue(newValue));
+  else if (command == fLArNModulesXCmd) {
+    fDetector->SetLArNModulesX(fLArNModulesXCmd->GetNewIntValue(newValue));
   }
-  else if (command == fLArTPCWidthCmd) {
-    fDetector->SetLArTPCWidth(fLArTPCWidthCmd->GetNewDoubleValue(newValue));
+  else if (command == fLArNModulesYCmd) {
+    fDetector->SetLArNModulesY(fLArNModulesYCmd->GetNewIntValue(newValue));
   }
-  else if (command == fLArTPCDepthCmd) {
-    fDetector->SetLArTPCDepth(fLArTPCDepthCmd->GetNewDoubleValue(newValue));
+  else if (command == fLArNModulesZCmd) {
+    fDetector->SetLArNModulesZ(fLArNModulesZCmd->GetNewIntValue(newValue));
+  }
+  else if (command == fLArModuleLengthCmd) {
+    fDetector->SetLArModuleLength(fLArModuleLengthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArModuleWidthCmd) {
+    fDetector->SetLArModuleWidth(fLArModuleWidthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArModuleDepthCmd) {
+    fDetector->SetLArModuleDepth(fLArModuleDepthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArModuleGapCmd) {
+    fDetector->SetLArModuleGap(fLArModuleGapCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArInsulationThicknessCmd) {
+    fDetector->SetLArInsulationThickness(fLArInsulationThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArCryostatThicknessCmd) {
+    fDetector->SetLArCryostatThickness(fLArCryostatThicknessCmd->GetNewDoubleValue(newValue));
   }
 }

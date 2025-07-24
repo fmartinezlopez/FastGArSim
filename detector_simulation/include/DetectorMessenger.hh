@@ -31,9 +31,15 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fMuIDAbsorberThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fMuIDScintillatorThicknessCmd;
     G4UIcmdWithAnInteger*      fMuIDLayersCmd;
-    G4UIcmdWithADoubleAndUnit* fLArTPCLengthCmd;
-    G4UIcmdWithADoubleAndUnit* fLArTPCWidthCmd;
-    G4UIcmdWithADoubleAndUnit* fLArTPCDepthCmd;
+    G4UIcmdWithAnInteger*      fLArNModulesXCmd;
+    G4UIcmdWithAnInteger*      fLArNModulesYCmd;
+    G4UIcmdWithAnInteger*      fLArNModulesZCmd;
+    G4UIcmdWithADoubleAndUnit* fLArModuleLengthCmd;
+    G4UIcmdWithADoubleAndUnit* fLArModuleWidthCmd;
+    G4UIcmdWithADoubleAndUnit* fLArModuleDepthCmd;
+    G4UIcmdWithADoubleAndUnit* fLArModuleGapCmd;
+    G4UIcmdWithADoubleAndUnit* fLArInsulationThicknessCmd;
+    G4UIcmdWithADoubleAndUnit* fLArCryostatThicknessCmd;
 };
 
 #endif

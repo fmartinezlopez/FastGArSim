@@ -46,14 +46,22 @@ public:
     void SetMuIDAbsorberThickness(G4double thickness);
     void SetMuIDScintillatorThickness(G4double thickness);
     void SetMuIDLayers(G4int layers);
-    void SetLArTPCLength(G4double length);
-    void SetLArTPCWidth(G4double width);
-    void SetLArTPCDepth(G4double depth);
+    void SetLArNModulesX(G4int nx);
+    void SetLArNModulesY(G4int ny);
+    void SetLArNModulesZ(G4int nz);
+    void SetLArModuleLength(G4double length);
+    void SetLArModuleWidth(G4double width);
+    void SetLArModuleDepth(G4double depth);
+    void SetLArModuleGap(G4double gap);
+    void SetLArInsulationThickness(G4double thickness);
+    void SetLArCryostatThickness(G4double thickness);
     
 private:
 
     G4bool fGeometryInitialized;
     GeometryType fGeometryType;
+
+    void ComputeDerivedQuantities();
 
     // Methods to create detector components
     void DefineMaterials();
@@ -112,6 +120,8 @@ private:
     G4Material* fMuIDScintillatorMaterial;
     G4Material* fMuIDAbsorberMaterial;
     G4Material* fLArTPCMaterial;
+    G4Material* fLArCryostatMaterial;
+    G4Material* fLArInsulationMaterial;
     
     // Logical volumes
     G4LogicalVolume* fWorldLogical;
@@ -148,15 +158,24 @@ private:
     G4double fMuIDScintillatorThickness;
     G4int    fMuIDNumSides;
     G4int    fMuIDLayers;
-    G4double fLArTPCLength;
-    G4double fLArTPCWidth;
-    G4double fLArTPCDepth;
+    G4int    fLArNModulesX;
+    G4int    fLArNModulesY;
+    G4int    fLArNModulesZ;
+    G4double fLArModuleLength;
+    G4double fLArModuleWidth;
+    G4double fLArModuleDepth;
+    G4double fLArModuleGap;
+    G4double fLArInsulationThickness;
+    G4double fLArCryostatThickness;
 
     // Derived configuration parameters
     G4double fECalLayerThickness;
     G4double fMuIDLayerThickness;
     G4double fECalTotalThickness;
     G4double fMuIDTotalThickness;
+    G4double fLArTotalLength;
+    G4double fLArTotalWidth;
+    G4double fLArTotalDepth;
     
     // Messenger for macro commands
     DetectorMessenger* fMessenger;

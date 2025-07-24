@@ -4,6 +4,7 @@
 #include "G4Box.hh"
 #include "G4Tubs.hh"
 #include "G4Polyhedra.hh"
+#include "G4SubtractionSolid.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
 #include "G4UnitsTable.hh"
@@ -40,7 +41,9 @@ DetectorConstruction::DetectorConstruction()
   fECalAbsorberThickness(5.0*mm), fECalScintillatorThickness(10.0*mm), fECalNumSides(12), fECalLayers(42),
   fMuIDBarrelGap(50.0*cm),
   fMuIDAbsorberThickness(10.0*cm), fMuIDScintillatorThickness(2.0*cm), fMuIDNumSides(21), fMuIDLayers(3),
-  fLArTPCLength(500.0*cm), fLArTPCWidth(300.0*cm), fLArTPCDepth(700.0*cm),
+  fLArNModulesX(5), fLArNModulesY(1), fLArNModulesZ(7),
+  fLArModuleLength(100.0*cm), fLArModuleWidth(300.0*cm), fLArModuleDepth(100.0*cm),
+  fLArModuleGap(1.0*cm), fLArInsulationThickness(1.0*mm), fLArCryostatThickness(5.0*cm),
   fMessenger(nullptr),
   fGeometryInitialized(false)
 {
@@ -51,16 +54,9 @@ DetectorConstruction::DetectorConstruction()
     // Define materials
     DefineMaterials();
 
-    G4cout << "TPC radius: " << G4BestUnit(fTPCRadius, "Length") << "\n"
-           << "TPC length: " << G4BestUnit(fTPCLength, "Length") << "\n"
-           << G4endl;
-
-    // Define some numerical quantities that will be used extensively
-    fECalLayerThickness = fECalAbsorberThickness + fECalScintillatorThickness;
-    fMuIDLayerThickness = fMuIDAbsorberThickness + fMuIDScintillatorThickness;
-
-    fECalTotalThickness = fECalLayerThickness*fECalLayers;
-    fMuIDTotalThickness = fMuIDLayerThickness*fMuIDLayers;
+    // Useful numerical quantities
+    ComputeDerivedQuantities();
+    
 }
 
 DetectorConstruction::~DetectorConstruction()
@@ -68,13 +64,23 @@ DetectorConstruction::~DetectorConstruction()
     delete fMessenger;
 }
 
-G4bool DetectorConstruction::UpdateGeometry()
+void DetectorConstruction::ComputeDerivedQuantities()
 {
-    // Recalculate derived quantities
+    // Define some numerical quantities that will be used extensively
     fECalLayerThickness = fECalAbsorberThickness + fECalScintillatorThickness;
     fMuIDLayerThickness = fMuIDAbsorberThickness + fMuIDScintillatorThickness;
     fECalTotalThickness = fECalLayerThickness*fECalLayers;
     fMuIDTotalThickness = fMuIDLayerThickness*fMuIDLayers;
+
+    fLArTotalLength = fLArNModulesX * fLArModuleLength + (fLArNModulesX + 1) * fLArModuleGap;
+    fLArTotalWidth  = fLArNModulesY * fLArModuleWidth  + (fLArNModulesY + 1) * fLArModuleGap;
+    fLArTotalDepth  = fLArNModulesZ * fLArModuleDepth  + (fLArNModulesZ + 1) * fLArModuleGap;
+}
+
+G4bool DetectorConstruction::UpdateGeometry()
+{
+    // Recalculate derived quantities
+    ComputeDerivedQuantities();
     
     G4cout << "Updating geometry..." << G4endl;
     
@@ -124,12 +130,17 @@ void DetectorConstruction::DefineMaterials()
     fMuIDAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
     fMuIDScintillatorMaterial = nistManager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
 
-    // Material for LAr TPC
+    // Materials for LAr TPC
     fLArTPCMaterial = nistManager->FindOrBuildMaterial("G4_lAr"); // use pre-defined LAr material
+    fLArCryostatMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+    fLArInsulationMaterial = nistManager->FindOrBuildMaterial("G4_Al"); // Thin Al for optical isolation
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
+    // Recalculate derived quantities
+    ComputeDerivedQuantities();
+
     // Construct world volume
     fWorldPhysical = ConstructWorld();
 
@@ -169,7 +180,91 @@ void DetectorConstruction::ConstructGArDetector()
 
 void DetectorConstruction::ConstructLArDetector()
 {
-    // Create cubic LAr box
+    // Check that module boxes don't overlap
+    if (fLArInsulationThickness*2 > fLArModuleGap) {
+        G4cerr << "LAr TPC modules will overlap!" << G4endl;
+    }
+
+    // Create cryostat vessel
+    G4Box* cryostatOuterSolid = new G4Box("Cryostat_outer",
+                                          (fLArTotalLength + 2*fLArCryostatThickness) / 2,
+                                          (fLArTotalWidth  + 2*fLArCryostatThickness) / 2,
+                                          (fLArTotalDepth  + 2*fLArCryostatThickness) / 2);
+
+    G4Box* cryostatInnerSolid = new G4Box("Cryostat_inner", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
+
+    G4SubtractionSolid* cryostatSolid = new G4SubtractionSolid("Cryostat", cryostatOuterSolid, cryostatInnerSolid);
+    G4LogicalVolume* cryostatLogical = new G4LogicalVolume(cryostatSolid, fLArCryostatMaterial, "Cryostat_log");
+    // Place cryostat in world
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), cryostatLogical, "Cryostat_phys", fWorldLogical, false, 0, true);
+
+    // Create mother volume for all TPC modules
+    G4Box* motherSolid = new G4Box("LArTPC_Mother", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
+    G4LogicalVolume* motherLogical = new G4LogicalVolume(motherSolid, fWorldMaterial, "LArTPC_Mother_log");
+    // Place mother volume inside cryostat
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), motherLogical, "LArTPC_Mother_phys", fWorldLogical, false, 0, true);
+
+    // Create an insulation box for TPC modules (will be replicated)
+    G4Box* insulationOuterSolid = new G4Box("Insulation_outer",
+                                            (fLArModuleLength + 2*fLArInsulationThickness) / 2,
+                                            (fLArModuleWidth  + 2*fLArInsulationThickness) / 2,
+                                            (fLArModuleDepth  + 2*fLArInsulationThickness) / 2);
+
+    G4Box* insulationInnerSolid = new G4Box("Insulation_inner", fLArModuleLength/2, fLArModuleWidth/2, fLArModuleDepth/2);
+
+    G4SubtractionSolid* insulationSolid = new G4SubtractionSolid("Insulation", insulationOuterSolid, insulationInnerSolid);
+    G4LogicalVolume* insulationLogical = new G4LogicalVolume(insulationSolid, fLArInsulationMaterial, "Insulation_log");
+
+    // Create a single TPC module (will be replicated)
+    G4Box* moduleSolid = new G4Box("TPC", fLArModuleLength/2, fLArModuleWidth/2, fLArModuleDepth/2);
+    fLArTPCLogical = new G4LogicalVolume(moduleSolid, fLArTPCMaterial, "TPC_log");
+
+    // Place modules and insulation boxes
+    G4int moduleID = 0;
+    for (G4int ix = 0; ix < fLArNModulesX; ix++) {
+        for (G4int iy = 0; iy < fLArNModulesY; iy++) {
+            for (G4int iz = 0; iz < fLArNModulesZ; iz++) {
+
+                // Calculate module position
+                G4double xPos = -fLArTotalLength/2 + fLArModuleGap + fLArModuleLength/2 + ix * (fLArModuleLength + fLArModuleGap);
+                G4double yPos = 0; // Centered in Y
+                G4double zPos = -fLArTotalDepth/2  + fLArModuleGap + fLArModuleDepth/2  + iz * (fLArModuleDepth  + fLArModuleGap);
+
+                // Place insulation box
+                new G4PVPlacement(0, G4ThreeVector(xPos, yPos, zPos),
+                                  insulationLogical, "Insulation_phys",
+                                  motherLogical, false, moduleID, true);
+
+                // Place module inside insulation box
+                new G4PVPlacement(0, G4ThreeVector(xPos, yPos, zPos),
+                                  fLArTPCLogical, "TPC_phys",
+                                  motherLogical, false, moduleID, true);
+
+                moduleID++;
+
+            }
+        }
+    }
+
+    // Set visualization attributes
+    G4VisAttributes* cryostatVisAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 0.0, 0.3));
+    cryostatVisAtt->SetVisibility(true);
+    //cryostatVisAtt->SetForceWireframe(true);
+    cryostatLogical->SetVisAttributes(cryostatVisAtt);
+    
+    G4VisAttributes* motherVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
+    motherVisAtt->SetVisibility(true);
+    motherLogical->SetVisAttributes(motherVisAtt);
+
+    G4VisAttributes* insulationVisAtt = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.0));
+    insulationVisAtt->SetVisibility(false);
+    insulationLogical->SetVisAttributes(insulationVisAtt);
+    
+    G4VisAttributes* moduleVisAtt = new G4VisAttributes(G4Colour(1.0, 0.0, 0.0, 0.3));
+    moduleVisAtt->SetVisibility(true);
+    fLArTPCLogical->SetVisAttributes(moduleVisAtt);
+
+    /* // Create cubic LAr box
     G4Box* tpcSolid = new G4Box("LArTPC", fLArTPCLength/2, fLArTPCWidth/2, fLArTPCDepth/2);
     fLArTPCLogical = new G4LogicalVolume(tpcSolid, fLArTPCMaterial, "TPC_log");
 
@@ -180,7 +275,7 @@ void DetectorConstruction::ConstructLArDetector()
 
     // Place TPC in world
     fLArTPCPhysical = new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fLArTPCLogical, 
-                                        "TPC_phys", fWorldLogical, false, 0);
+                                        "TPC_phys", fWorldLogical, false, 0); */
     
     // Set user limits for tracking
     G4UserLimits* limitsTPCSteps = new G4UserLimits(1.0*mm);
@@ -198,9 +293,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
         worldSizeZ = 2.5 * (fTPCLength/2 + fECalTotalThickness + fMuIDTotalThickness);
     } else if (fGeometryType == kLArLike) {
         // Calculate world size based on LAr detector dimensions
-        worldSizeX = 2.0 * fLArTPCLength;
-        worldSizeY = 2.0 * fLArTPCWidth;
-        worldSizeZ = 2.0 * fLArTPCDepth;
+        worldSizeX = 2.0 * fLArTotalLength;
+        worldSizeY = 2.0 * fLArTotalWidth;
+        worldSizeZ = 2.0 * fLArTotalDepth;
     } else {
         G4cerr << "Unknown geometry type!" << G4endl;
     }
@@ -242,7 +337,6 @@ void DetectorConstruction::ConstructFieldEnclosure()
 
 void DetectorConstruction::ConstructTPC()
 {
-
     // Create TPC cylindrical volume
     G4Tubs* tpcSolid = new G4Tubs("GArTPC", 0, fTPCRadius, fTPCLength/2, 0, twopi);
     fTPCLogical = new G4LogicalVolume(tpcSolid, fGArTPCMaterial, "TPC_log");
@@ -272,12 +366,10 @@ void DetectorConstruction::ConstructECal()
 
 void DetectorConstruction::ConstructMuID()
 {
-
     G4double muidBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalTotalThickness;
     G4double muidBarrelInnerDistance = fTPCRadius + fECalBarrelGap + fECalTotalThickness + fMuIDBarrelGap;
 
     ConstructSamplingBarrel("MuID", muidBarrelTotalLength, muidBarrelInnerDistance, fMuIDNumSides, fMuIDTotalThickness, fMuIDLayerThickness, fMuIDAbsorberThickness, fMuIDLayers, fMuIDAbsorberMaterial, fMuIDScintillatorMaterial, fWorldLogical, &fMuIDLogical, &fMuIDScintillatorLogical, G4Colour(1.0, 0.0, 0.0, 0.3));
-
 }
 
 void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
@@ -295,7 +387,6 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
                                                    G4LogicalVolume** outScintillatorVolume,
                                                    G4Colour visColor)
 {
-
     // Define barrel dimensions
     G4double cosineAngle = std::cos(pi / numSides);
     G4double innerApothem = barrelInnerDistance;
@@ -408,7 +499,6 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
                                                    G4LogicalVolume** outScintillatorVolume,
                                                    G4Colour visColor)
 {
-
     // Create endcaps
     G4Tubs* endcapSolid = new G4Tubs(baseName+"_endcap", 0, endcapRadius, totalThickness/2, 0, twopi);
     G4LogicalVolume* endcapLogical = new G4LogicalVolume(endcapSolid, fWorldMaterial, baseName+"_endcap_log");
@@ -588,30 +678,90 @@ void DetectorConstruction::SetMuIDLayers(G4int layers)
     }
 }
 
-void DetectorConstruction::SetLArTPCLength(G4double length)
+void DetectorConstruction::SetLArNModulesX(G4int nx)
 {
-    fLArTPCLength = length;
-    G4cout << "LAr TPC length set to " << fLArTPCLength/cm << " cm" << G4endl;
+    fLArNModulesX = nx;
+    G4cout << "Number of LAr modules in the X direction set to " << fLArNModulesX << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kLArLike) {
         UpdateGeometry();
     }
 }
 
-void DetectorConstruction::SetLArTPCWidth(G4double width)
+void DetectorConstruction::SetLArNModulesY(G4int ny)
 {
-    fLArTPCWidth = width;
-    G4cout << "LAr TPC width set to " << fLArTPCWidth/cm << " cm" << G4endl;
+    fLArNModulesY = ny;
+    G4cout << "Number of LAr modules in the Y direction set to " << fLArNModulesY << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kLArLike) {
         UpdateGeometry();
     }
 }
 
-void DetectorConstruction::SetLArTPCDepth(G4double depth)
+void DetectorConstruction::SetLArNModulesZ(G4int nz)
 {
-    fLArTPCDepth = depth;
-    G4cout << "LAr TPC depth set to " << fLArTPCDepth/cm << " cm" << G4endl;
+    fLArNModulesZ = nz;
+    G4cout << "Number of LAr modules in the Z direction set to " << fLArNModulesZ << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArModuleLength(G4double length)
+{
+    fLArModuleLength = length;
+    G4cout << "LAr module length set to " << fLArModuleLength/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArModuleWidth(G4double width)
+{
+    fLArModuleWidth = width;
+    G4cout << "LAr module width set to " << fLArModuleWidth/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArModuleDepth(G4double depth)
+{
+    fLArModuleDepth = depth;
+    G4cout << "LAr module depth set to " << fLArModuleDepth/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArModuleGap(G4double gap)
+{
+    fLArModuleGap = gap;
+    G4cout << "LAr module gap set to " << fLArModuleGap/mm << " mm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArInsulationThickness(G4double thickness)
+{
+    fLArInsulationThickness = thickness;
+    G4cout << "LAr module insulation thickness set to " << fLArInsulationThickness/mm << " mm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArCryostatThickness(G4double thickness)
+{
+    fLArCryostatThickness = thickness;
+    G4cout << "LAr TPC cryostat thickness set to " << fLArCryostatThickness/cm << " cm" << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kLArLike) {
         UpdateGeometry();
