@@ -199,10 +199,10 @@ void DetectorConstruction::ConstructLArDetector()
     new G4PVPlacement(0, G4ThreeVector(0, 0, 0), cryostatLogical, "Cryostat_phys", fWorldLogical, false, 0, true);
 
     // Create mother volume for all TPC modules
-    G4Box* motherSolid = new G4Box("LArTPC_Mother", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
-    G4LogicalVolume* motherLogical = new G4LogicalVolume(motherSolid, fWorldMaterial, "LArTPC_Mother_log");
+    G4Box* motherSolid = new G4Box("TPC", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
+    G4LogicalVolume* motherLogical = new G4LogicalVolume(motherSolid, fWorldMaterial, "TPC_log");
     // Place mother volume inside cryostat
-    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), motherLogical, "LArTPC_Mother_phys", fWorldLogical, false, 0, true);
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), motherLogical, "TPC_phys", fWorldLogical, false, 0, true);
 
     // Create an insulation box for TPC modules (will be replicated)
     G4Box* insulationOuterSolid = new G4Box("Insulation_outer",
@@ -216,8 +216,8 @@ void DetectorConstruction::ConstructLArDetector()
     G4LogicalVolume* insulationLogical = new G4LogicalVolume(insulationSolid, fLArInsulationMaterial, "Insulation_log");
 
     // Create a single TPC module (will be replicated)
-    G4Box* moduleSolid = new G4Box("TPC", fLArModuleLength/2, fLArModuleWidth/2, fLArModuleDepth/2);
-    fLArTPCLogical = new G4LogicalVolume(moduleSolid, fLArTPCMaterial, "TPC_log");
+    G4Box* moduleSolid = new G4Box("TPC_module", fLArModuleLength/2, fLArModuleWidth/2, fLArModuleDepth/2);
+    fLArTPCLogical = new G4LogicalVolume(moduleSolid, fLArTPCMaterial, "TPC_module_log");
 
     // Place modules and insulation boxes
     G4int moduleID = 0;
@@ -237,7 +237,7 @@ void DetectorConstruction::ConstructLArDetector()
 
                 // Place module inside insulation box
                 new G4PVPlacement(0, G4ThreeVector(xPos, yPos, zPos),
-                                  fLArTPCLogical, "TPC_phys",
+                                  fLArTPCLogical, "TPC_module_phys",
                                   motherLogical, false, moduleID, true);
 
                 moduleID++;
@@ -263,19 +263,6 @@ void DetectorConstruction::ConstructLArDetector()
     G4VisAttributes* moduleVisAtt = new G4VisAttributes(G4Colour(1.0, 0.0, 0.0, 0.3));
     moduleVisAtt->SetVisibility(true);
     fLArTPCLogical->SetVisAttributes(moduleVisAtt);
-
-    /* // Create cubic LAr box
-    G4Box* tpcSolid = new G4Box("LArTPC", fLArTPCLength/2, fLArTPCWidth/2, fLArTPCDepth/2);
-    fLArTPCLogical = new G4LogicalVolume(tpcSolid, fLArTPCMaterial, "TPC_log");
-
-    // Set visualization attributes
-    G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(0.0, 0.5, 1.0, 0.3));
-    tpcVisAtt->SetVisibility(true);
-    fLArTPCLogical->SetVisAttributes(tpcVisAtt);
-
-    // Place TPC in world
-    fLArTPCPhysical = new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fLArTPCLogical, 
-                                        "TPC_phys", fWorldLogical, false, 0); */
     
     // Set user limits for tracking
     G4UserLimits* limitsTPCSteps = new G4UserLimits(1.0*mm);
