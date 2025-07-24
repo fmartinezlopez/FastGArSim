@@ -55,7 +55,9 @@ public:
     void SetLArModuleGap(G4double gap);
     void SetLArInsulationThickness(G4double thickness);
     void SetLArCryostatThickness(G4double thickness);
-    
+    void SetLArEnableMuonWindow(G4bool enable);
+    void SetLArMuonWindowThickness(G4double thickness);
+
 private:
 
     G4bool fGeometryInitialized;
@@ -122,6 +124,7 @@ private:
     G4Material* fLArTPCMaterial;
     G4Material* fLArCryostatMaterial;
     G4Material* fLArInsulationMaterial;
+    G4Material* fLArMuonWindowMaterial;
     
     // Logical volumes
     G4LogicalVolume* fWorldLogical;
@@ -167,6 +170,8 @@ private:
     G4double fLArModuleGap;
     G4double fLArInsulationThickness;
     G4double fLArCryostatThickness;
+    G4bool   fLArEnableMuonWindow;
+    G4double fLArMuonWindowThickness;
 
     // Derived configuration parameters
     G4double fECalLayerThickness;
