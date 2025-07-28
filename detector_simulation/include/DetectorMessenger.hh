@@ -7,6 +7,7 @@
 class DetectorConstruction;
 class G4UIdirectory;
 class G4UIcmdWithAString;
+class G4UIcmdWithABool;
 class G4UIcmdWithAnInteger;
 class G4UIcmdWithADoubleAndUnit;
 
@@ -40,6 +41,8 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fLArModuleGapCmd;
     G4UIcmdWithADoubleAndUnit* fLArInsulationThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fLArCryostatThicknessCmd;
+    G4UIcmdWithABool*          fLArEnableMuonWindowCmd;
+    G4UIcmdWithADoubleAndUnit* fLArMuonWindowThicknessCmd;
 };
 
 #endif

@@ -44,6 +44,7 @@ DetectorConstruction::DetectorConstruction()
   fLArNModulesX(5), fLArNModulesY(1), fLArNModulesZ(7),
   fLArModuleLength(100.0*cm), fLArModuleWidth(300.0*cm), fLArModuleDepth(100.0*cm),
   fLArModuleGap(1.0*cm), fLArInsulationThickness(1.0*mm), fLArCryostatThickness(5.0*cm),
+  fLArEnableMuonWindow(true), fLArMuonWindowThickness(4.5*cm),
   fMessenger(nullptr),
   fGeometryInitialized(false)
 {
@@ -91,10 +92,20 @@ G4bool DetectorConstruction::UpdateGeometry()
 
 void DetectorConstruction::DefineMaterials()
 {
-    // World material definition
-	G4NistManager *nistManager = G4NistManager::Instance();
-	
     // Define materials for different detector components
+	G4NistManager *nistManager = G4NistManager::Instance();
+
+    // Get needed elements
+    G4double z, fractionmass;
+	G4int nel, natoms;
+
+    G4Element* H  = nistManager->FindOrBuildElement("H");
+    G4Element* C  = nistManager->FindOrBuildElement("C");
+    G4Element* N  = nistManager->FindOrBuildElement("N");
+    G4Element* O  = nistManager->FindOrBuildElement("O");
+    G4Element* Ar = nistManager->FindOrBuildElement("Ar");
+	
+    // World material definition
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
 
 	// Reference temperature and pressure for gas
@@ -104,15 +115,7 @@ void DetectorConstruction::DefineMaterials()
 
 	// Gas mixture density
 	G4double p10Density = 0.001677*g/cm3; // at atm pressure (used in GArSoft -- need to check)
-    //G4double p10Density = 0.00159*g/cm3; // at atm pressure
-
-	// Define needed elements
-	G4double z, fractionmass;
-	G4int nel, natoms;
-
-	G4Element* H  = new G4Element("Hydrogen", "H",  z = 1.,  1.008*g/mole);
-	G4Element* C  = new G4Element("Carbon",   "C",  z = 6.,  12.011*g/mole);
-	G4Element* Ar = new G4Element("Argon",    "Ar", z = 18., 39.948*g/mole);
+    //G4double p10Density = 0.00159*g/cm3; // at atm pressure (from some random table)
 
 	// Define gas material
 	fGArTPCMaterial = new G4Material("P10", p10Density*fPressure/fAtmPressure, nel = 3, kStateGas, fTemperature*kelvin, fPressure*bar);
@@ -134,6 +137,16 @@ void DetectorConstruction::DefineMaterials()
     fLArTPCMaterial = nistManager->FindOrBuildMaterial("G4_lAr"); // use pre-defined LAr material
     fLArCryostatMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
     fLArInsulationMaterial = nistManager->FindOrBuildMaterial("G4_Al"); // Thin Al for optical isolation
+
+    // Material for low-density foam muon window
+    G4double foamDensity = 0.2*g/cm3;  // Low density foam (200 kg/m³)
+
+    // Typical composition for polyurethane foam: (C3H8N2O)n
+    fLArMuonWindowMaterial = new G4Material("FiberglassFoam", foamDensity, nel = 4, kStateSolid);
+    fLArMuonWindowMaterial->AddElement(C, 3);
+    fLArMuonWindowMaterial->AddElement(H, 8);
+    fLArMuonWindowMaterial->AddElement(N, 2);
+    fLArMuonWindowMaterial->AddElement(O, 1);
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
@@ -185,7 +198,7 @@ void DetectorConstruction::ConstructLArDetector()
         G4cerr << "LAr TPC modules will overlap!" << G4endl;
     }
 
-    // Create cryostat vessel
+    // Create cryostat solid
     G4Box* cryostatOuterSolid = new G4Box("Cryostat_outer",
                                           (fLArTotalLength + 2*fLArCryostatThickness) / 2,
                                           (fLArTotalWidth  + 2*fLArCryostatThickness) / 2,
@@ -194,15 +207,71 @@ void DetectorConstruction::ConstructLArDetector()
     G4Box* cryostatInnerSolid = new G4Box("Cryostat_inner", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
 
     G4SubtractionSolid* cryostatSolid = new G4SubtractionSolid("Cryostat", cryostatOuterSolid, cryostatInnerSolid);
-    G4LogicalVolume* cryostatLogical = new G4LogicalVolume(cryostatSolid, fLArCryostatMaterial, "Cryostat_log");
+
+    // If muon window enabled cut hole in cryostat solid
+    if (fLArEnableMuonWindow) {
+        // Check that muon window is thiner than cryostat
+        if (fLArMuonWindowThickness > fLArCryostatThickness) {
+            G4cerr << "Muon window thicker than cryostat!" << G4endl;
+        }
+        
+        // Remove boc in +X face to make room for muon window
+        G4Box* cutoutBox = new G4Box("Cutout",
+                                     fLArMuonWindowThickness/2,
+                                     fLArTotalWidth/2,
+                                     fLArTotalDepth/2);
+        
+        G4ThreeVector cutoutPos(fLArTotalLength/2 + fLArCryostatThickness/2, 0, 0);
+        
+        cryostatSolid = new G4SubtractionSolid("Cryostat",
+                                               cryostatSolid,
+                                               cutoutBox,
+                                               0,
+                                               cutoutPos);
+    }
+
     // Place cryostat in world
+    G4LogicalVolume* cryostatLogical = new G4LogicalVolume(cryostatSolid, fLArCryostatMaterial, "Cryostat_log");
+    
     new G4PVPlacement(0, G4ThreeVector(0, 0, 0), cryostatLogical, "Cryostat_phys", fWorldLogical, false, 0, true);
+
+    // Set visualization attributes
+    G4VisAttributes* cryostatVisAtt = new G4VisAttributes(G4Colour(1.0, 0.0, 0.0, 0.1));
+    cryostatVisAtt->SetVisibility(true);
+    cryostatLogical->SetVisAttributes(cryostatVisAtt);
+
+    // If enabled create and place muon window
+    if (fLArEnableMuonWindow) {
+        
+        G4Box* muonWindowSolid = new G4Box("MuonWindow",
+                                           fLArMuonWindowThickness/2,
+                                           fLArTotalWidth/2,
+                                           fLArTotalDepth/2);
+        
+        G4LogicalVolume* muonWindowLogical = new G4LogicalVolume(muonWindowSolid,
+                                                                 fLArMuonWindowMaterial,
+                                                                 "MuonWindow_log");
+        
+        G4ThreeVector windowPos(fLArTotalLength/2 + fLArCryostatThickness/2, 0, 0);
+        
+        new G4PVPlacement(0, windowPos, muonWindowLogical, "MuonWindow_phys", fWorldLogical, false, 0, true);
+
+        // Set visualization attributes
+        G4VisAttributes* muonWindowVisAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 0.0, 0.3));
+        muonWindowVisAtt->SetVisibility(true);
+        muonWindowLogical->SetVisAttributes(muonWindowVisAtt);
+    }
 
     // Create mother volume for all TPC modules
     G4Box* motherSolid = new G4Box("TPC", fLArTotalLength/2, fLArTotalWidth/2, fLArTotalDepth/2);
     G4LogicalVolume* motherLogical = new G4LogicalVolume(motherSolid, fWorldMaterial, "TPC_log");
     // Place mother volume inside cryostat
     new G4PVPlacement(0, G4ThreeVector(0, 0, 0), motherLogical, "TPC_phys", fWorldLogical, false, 0, true);
+
+    // Set visualization attributes
+    G4VisAttributes* motherVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
+    motherVisAtt->SetVisibility(false);
+    motherLogical->SetVisAttributes(motherVisAtt);
 
     // Create an insulation box for TPC modules (will be replicated)
     G4Box* insulationOuterSolid = new G4Box("Insulation_outer",
@@ -247,20 +316,11 @@ void DetectorConstruction::ConstructLArDetector()
     }
 
     // Set visualization attributes
-    G4VisAttributes* cryostatVisAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 0.0, 0.3));
-    cryostatVisAtt->SetVisibility(true);
-    //cryostatVisAtt->SetForceWireframe(true);
-    cryostatLogical->SetVisAttributes(cryostatVisAtt);
-    
-    G4VisAttributes* motherVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
-    motherVisAtt->SetVisibility(true);
-    motherLogical->SetVisAttributes(motherVisAtt);
-
     G4VisAttributes* insulationVisAtt = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.0));
     insulationVisAtt->SetVisibility(false);
     insulationLogical->SetVisAttributes(insulationVisAtt);
     
-    G4VisAttributes* moduleVisAtt = new G4VisAttributes(G4Colour(1.0, 0.0, 0.0, 0.3));
+    G4VisAttributes* moduleVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
     moduleVisAtt->SetVisibility(true);
     fLArTPCLogical->SetVisAttributes(moduleVisAtt);
     
@@ -749,6 +809,26 @@ void DetectorConstruction::SetLArCryostatThickness(G4double thickness)
 {
     fLArCryostatThickness = thickness;
     G4cout << "LAr TPC cryostat thickness set to " << fLArCryostatThickness/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArEnableMuonWindow(G4bool enable)
+{
+    fLArEnableMuonWindow = enable;
+    G4cout << "LAr muon window set to " << fLArEnableMuonWindow << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetLArMuonWindowThickness(G4double thickness)
+{
+    fLArMuonWindowThickness = thickness;
+    G4cout << "LAr muon window thickness set to " << fLArMuonWindowThickness/cm << " cm" << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kLArLike) {
         UpdateGeometry();

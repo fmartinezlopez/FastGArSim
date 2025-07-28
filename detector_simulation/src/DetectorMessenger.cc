@@ -3,6 +3,7 @@
 
 #include "G4UIdirectory.hh"
 #include "G4UIcmdWithAString.hh"
+#include "G4UIcmdWithABool.hh"
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4SystemOfUnits.hh"
@@ -140,6 +141,18 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fLArCryostatThicknessCmd->SetUnitCategory("Length");
   fLArCryostatThicknessCmd->SetRange("LArCryostatThickness>0.");
   fLArCryostatThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArEnableMuonWindowCmd = new G4UIcmdWithABool("/detector/LArEnableMuonWindow", this);
+  fLArEnableMuonWindowCmd->SetGuidance("Enable LAr Muon Window");
+  fLArEnableMuonWindowCmd->SetParameterName("LArEnableMuonWindow", false);
+  fLArEnableMuonWindowCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fLArMuonWindowThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/LArMuonWindowThickness", this);
+  fLArMuonWindowThicknessCmd->SetGuidance("Set LAr Muon Window Thickness");
+  fLArMuonWindowThicknessCmd->SetParameterName("LArMuonWindowThickness", false);
+  fLArMuonWindowThicknessCmd->SetUnitCategory("Length");
+  fLArMuonWindowThicknessCmd->SetRange("LArMuonWindowThickness>0.");
+  fLArMuonWindowThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -162,6 +175,8 @@ DetectorMessenger::~DetectorMessenger()
   delete fLArModuleGapCmd;
   delete fLArInsulationThicknessCmd;
   delete fLArCryostatThicknessCmd;
+  delete fLArEnableMuonWindowCmd;
+  delete fLArMuonWindowThicknessCmd;
   delete fDetectorDir;
 }
 
@@ -220,5 +235,11 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   }
   else if (command == fLArCryostatThicknessCmd) {
     fDetector->SetLArCryostatThickness(fLArCryostatThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fLArEnableMuonWindowCmd) {
+    fDetector->SetLArEnableMuonWindow(fLArEnableMuonWindowCmd->GetNewBoolValue(newValue));
+  }
+  else if (command == fLArMuonWindowThicknessCmd) {
+    fDetector->SetLArMuonWindowThickness(fLArMuonWindowThicknessCmd->GetNewDoubleValue(newValue));
   }
 }
