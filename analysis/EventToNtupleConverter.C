@@ -42,23 +42,27 @@ private:
     std::vector<Float_t> startX, startY, startZ;
     std::vector<Float_t> endX, endY, endZ;
 
-    // Initial momentum
-    std::vector<Float_t> momX, momY, momZ;
+    // Initial and final momenta
+    std::vector<Float_t> startPX, startPY, startPZ;
+    std::vector<Float_t> endPX, endPY, endPZ;
 
     // TPC hits
     std::vector<Int_t> tpcHitTrackID;  // Which particle this hit belongs to
+    std::vector<Bool_t> tpcHitIsSec;
     std::vector<Float_t> tpcHitX, tpcHitY, tpcHitZ;
     std::vector<Float_t> tpcHitEdep;
     std::vector<Float_t> tpcHitStepSize;
 
     // ECal hits (both primary and secondary)
     std::vector<Int_t> ecalHitTrackID;
+    std::vector<Bool_t> ecalHitIsSec;
     std::vector<Float_t> ecalHitX, ecalHitY, ecalHitZ;
     std::vector<Float_t> ecalHitTime;
     std::vector<Float_t> ecalHitEdep;
 
     // MuID hits (both primary and secondary)
     std::vector<Int_t> muidHitTrackID;
+    std::vector<Bool_t> muidHitIsSec;
     std::vector<Float_t> muidHitX, muidHitY, muidHitZ;
     std::vector<Float_t> muidHitTime;
     std::vector<Float_t> muidHitEdep;
@@ -125,13 +129,17 @@ public:
         outputTree->Branch("endY",   &endY);
         outputTree->Branch("endZ",   &endZ);
         
-        // Initial momentum
-        outputTree->Branch("momX", &momX);
-        outputTree->Branch("momY", &momY);
-        outputTree->Branch("momZ", &momZ);
+        // Initial and final momenta
+        outputTree->Branch("startPX", &startPX);
+        outputTree->Branch("startPY", &startPY);
+        outputTree->Branch("startPZ", &startPZ);
+        outputTree->Branch("endPX", &endPX);
+        outputTree->Branch("endPY", &endPY);
+        outputTree->Branch("endPZ", &endPZ);
 
         // TPC hits
         outputTree->Branch("tpcHitTrackID", &tpcHitTrackID);
+        outputTree->Branch("tpcHitIsSec", &tpcHitIsSec);
         outputTree->Branch("tpcHitX", &tpcHitX);
         outputTree->Branch("tpcHitY", &tpcHitY);
         outputTree->Branch("tpcHitZ", &tpcHitZ);
@@ -140,6 +148,7 @@ public:
         
         // ECal hits
         outputTree->Branch("ecalHitTrackID", &ecalHitTrackID);
+        outputTree->Branch("ecalHitIsSec", &ecalHitIsSec);
         outputTree->Branch("ecalHitX", &ecalHitX);
         outputTree->Branch("ecalHitY", &ecalHitY);
         outputTree->Branch("ecalHitZ", &ecalHitZ);
@@ -148,6 +157,7 @@ public:
 
         // MuID hits
         outputTree->Branch("muidHitTrackID", &muidHitTrackID);
+        outputTree->Branch("muidHitIsSec", &muidHitIsSec);
         outputTree->Branch("muidHitX", &muidHitX);
         outputTree->Branch("muidHitY", &muidHitY);
         outputTree->Branch("muidHitZ", &muidHitZ);
@@ -168,18 +178,22 @@ public:
         startX.clear(); startY.clear(); startZ.clear();
         endX.clear(); endY.clear(); endZ.clear();
 
-        momX.clear(); momY.clear(); momZ.clear();
+        startPX.clear(); startPY.clear(); startPZ.clear();
+        endPX.clear(); endPY.clear(); endPZ.clear();
         
         tpcHitTrackID.clear();
+        tpcHitIsSec.clear();
         tpcHitX.clear(); tpcHitY.clear(); tpcHitZ.clear();
         tpcHitEdep.clear(); tpcHitStepSize.clear();
         
         ecalHitTrackID.clear();
+        ecalHitIsSec.clear();
         ecalHitX.clear(); ecalHitY.clear(); ecalHitZ.clear();
         ecalHitTime.clear();
         ecalHitEdep.clear();
 
         muidHitTrackID.clear();
+        muidHitIsSec.clear();
         muidHitX.clear(); muidHitY.clear(); muidHitZ.clear();
         muidHitTime.clear();
         muidHitEdep.clear();
@@ -235,7 +249,6 @@ public:
                     startX.push_back(firstPoint.x);
                     startY.push_back(firstPoint.y);
                     startZ.push_back(firstPoint.z);
-                    
                     // Last trajectory point
                     const auto& lastPoint = trajPoints.back();
                     endX.push_back(lastPoint.x);
@@ -255,20 +268,41 @@ public:
                 if (!momPoints.empty()) {
                     // First trajectory point
                     const auto& firstPoint = momPoints.front();
-                    momX.push_back(firstPoint.x);
-                    momY.push_back(firstPoint.y);
-                    momZ.push_back(firstPoint.z);
+                    startPX.push_back(firstPoint.x);
+                    startPY.push_back(firstPoint.y);
+                    startPZ.push_back(firstPoint.z);
+                    // Last trajectory point
+                    const auto& lastPoint = momPoints.back();
+                    endPX.push_back(lastPoint.x);
+                    endPY.push_back(lastPoint.y);
+                    endPZ.push_back(lastPoint.z);
                 } else {
                     // No momentum points - fill with bogus
-                    momX.push_back(-9999.0);
-                    momY.push_back(-9999.0);
-                    momZ.push_back(-9999.0);
+                    startPX.push_back(-9999.0);
+                    startPY.push_back(-9999.0);
+                    startPZ.push_back(-9999.0);
+                    endPX.push_back(-9999.0);
+                    endPY.push_back(-9999.0);
+                    endPZ.push_back(-9999.0);
                 }
                 
                 // Process TPC hits
                 const auto& tpcHits = particle.tpcHits;
                 for (const auto& hit : tpcHits) {
                     tpcHitTrackID.push_back(particle.trackID);
+                    tpcHitIsSec.push_back(false);
+                    tpcHitX.push_back(hit.x);
+                    tpcHitY.push_back(hit.y);
+                    tpcHitZ.push_back(hit.z);
+                    tpcHitEdep.push_back(hit.energyDeposit);
+                    tpcHitStepSize.push_back(hit.stepSize);
+                }
+
+                // Process secondary TPC hits
+                const auto& sec_tpcHits = particle.sec_tpcHits;
+                for (const auto& hit : sec_tpcHits) {
+                    tpcHitTrackID.push_back(particle.trackID);
+                    tpcHitIsSec.push_back(true);
                     tpcHitX.push_back(hit.x);
                     tpcHitY.push_back(hit.y);
                     tpcHitZ.push_back(hit.z);
@@ -280,6 +314,7 @@ public:
                 const auto& ecalHits = particle.ecalHits;
                 for (const auto& hit : ecalHits) {
                     ecalHitTrackID.push_back(particle.trackID);
+                    ecalHitIsSec.push_back(false);
                     ecalHitX.push_back(hit.x);
                     ecalHitY.push_back(hit.y);
                     ecalHitZ.push_back(hit.z);
@@ -291,6 +326,7 @@ public:
                 const auto& sec_ecalHits = particle.sec_ecalHits;
                 for (const auto& hit : sec_ecalHits) {
                     ecalHitTrackID.push_back(particle.trackID);
+                    ecalHitIsSec.push_back(true);
                     ecalHitX.push_back(hit.x);
                     ecalHitY.push_back(hit.y);
                     ecalHitZ.push_back(hit.z);
@@ -302,6 +338,7 @@ public:
                 const auto& muidHits = particle.muidHits;
                 for (const auto& hit : muidHits) {
                     muidHitTrackID.push_back(particle.trackID);
+                    muidHitIsSec.push_back(false);
                     muidHitX.push_back(hit.x);
                     muidHitY.push_back(hit.y);
                     muidHitZ.push_back(hit.z);
@@ -313,6 +350,7 @@ public:
                 const auto& sec_muidHits = particle.sec_muidHits;
                 for (const auto& hit : sec_muidHits) {
                     muidHitTrackID.push_back(particle.trackID);
+                    muidHitIsSec.push_back(true);
                     muidHitX.push_back(hit.x);
                     muidHitY.push_back(hit.y);
                     muidHitZ.push_back(hit.z);
