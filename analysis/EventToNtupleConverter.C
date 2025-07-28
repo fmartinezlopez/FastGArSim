@@ -1,5 +1,15 @@
-// EventToNtupleConverter.C
-// ROOT macro to convert Event objects to flat ntuple
+ /***************************************************************************
+ * EventToNtupleConverter.C
+ * 
+ * Author: Francisco Martinez Lopez
+ * Email: frmart@iu.edu
+ * 
+ * Created: June 2025
+ * 
+ * Description:
+ *   Convert ROOT file with Event objects from FastGArSim into flat ntuple
+ * 
+ ***************************************************************************/
 
 #include "TFile.h"
 #include "TTree.h"
@@ -19,12 +29,12 @@ private:
     Event* event;
     
     // Variables for analysis ntuple
-    Short_t    eventID;
+    Int_t    eventID;
 
     // Particle properties
-    std::vector<Short_t> trackID;
+    std::vector<Int_t> trackID;
     std::vector<Int_t> pdgCode;
-    std::vector<Short_t> motherID;
+    std::vector<Int_t> motherID;
     std::vector<std::string> creatorProcess;
     std::vector<std::string> endProcess;
 
@@ -36,19 +46,19 @@ private:
     std::vector<Float_t> momX, momY, momZ;
 
     // TPC hits
-    std::vector<Short_t> tpcHitTrackID;  // Which particle this hit belongs to
+    std::vector<Int_t> tpcHitTrackID;  // Which particle this hit belongs to
     std::vector<Float_t> tpcHitX, tpcHitY, tpcHitZ;
     std::vector<Float_t> tpcHitEdep;
     std::vector<Float_t> tpcHitStepSize;
 
     // ECal hits (both primary and secondary)
-    std::vector<Short_t> ecalHitTrackID;
+    std::vector<Int_t> ecalHitTrackID;
     std::vector<Float_t> ecalHitX, ecalHitY, ecalHitZ;
     std::vector<Float_t> ecalHitTime;
     std::vector<Float_t> ecalHitEdep;
 
     // MuID hits (both primary and secondary)
-    std::vector<Short_t> muidHitTrackID;
+    std::vector<Int_t> muidHitTrackID;
     std::vector<Float_t> muidHitX, muidHitY, muidHitZ;
     std::vector<Float_t> muidHitTime;
     std::vector<Float_t> muidHitEdep;
