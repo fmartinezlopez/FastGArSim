@@ -153,6 +153,14 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fLArMuonWindowThicknessCmd->SetUnitCategory("Length");
   fLArMuonWindowThicknessCmd->SetRange("LArMuonWindowThickness>0.");
   fLArMuonWindowThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  // Material commands
+  fPressureCmd = new G4UIcmdWithADoubleAndUnit("/detector/GasPressure", this);
+  fPressureCmd->SetGuidance("Set gas pressure");
+  fPressureCmd->SetParameterName("GasPressure", false);
+  fPressureCmd->SetUnitCategory("Pressure");
+  fPressureCmd->SetRange("GasPressure>0.");
+  fPressureCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -177,6 +185,7 @@ DetectorMessenger::~DetectorMessenger()
   delete fLArCryostatThicknessCmd;
   delete fLArEnableMuonWindowCmd;
   delete fLArMuonWindowThicknessCmd;
+  delete fPressureCmd;
   delete fDetectorDir;
 }
 
@@ -241,5 +250,8 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   }
   else if (command == fLArMuonWindowThicknessCmd) {
     fDetector->SetLArMuonWindowThickness(fLArMuonWindowThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fPressureCmd) {
+    fDetector->SetPressure(fPressureCmd->GetNewDoubleValue(newValue));
   }
 }

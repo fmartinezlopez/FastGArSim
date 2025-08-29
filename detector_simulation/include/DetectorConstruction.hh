@@ -57,6 +57,7 @@ public:
     void SetLArCryostatThickness(G4double thickness);
     void SetLArEnableMuonWindow(G4bool enable);
     void SetLArMuonWindowThickness(G4double thickness);
+    void SetPressure(G4double pressure);
 
 private:
 
@@ -80,35 +81,35 @@ private:
     void ConstructLArDetector();
     
     // Helper construction methods
-    void ConstructSamplingBarrel(G4String baseName,                       // base name for volumes
-                                 G4double barrelLength,                   // total length of barrel
-                                 G4double barrelInnerDistance,            // apothem of inner polygon
-                                 G4int numSides,                          // number of sides
-                                 G4double totalThickness,                 // total thickness of barrel
-                                 G4double layerThickness,                 // layer thickness
-                                 G4double layerAbsorberThickness,         // absorber thickness
-                                 G4int numLayers,                         // number of layers
-                                 G4Material* absorberMaterial,            // absorber material
-                                 G4Material* scintillatorMaterial,        // scintillator material
-                                 G4LogicalVolume* parentVolume,           // parent logical volume
-                                 G4LogicalVolume** outVolume,
+    void ConstructSamplingBarrel(G4String baseName,                        // base name for volumes
+                                 G4double barrelLength,                    // total length of barrel
+                                 G4double barrelInnerDistance,             // apothem of inner polygon
+                                 G4int numSides,                           // number of sides
+                                 G4double totalThickness,                  // total thickness of barrel
+                                 G4double layerThickness,                  // layer thickness
+                                 G4double layerAbsorberThickness,          // absorber thickness
+                                 G4int numLayers,                          // number of layers
+                                 G4Material* absorberMaterial,             // absorber material
+                                 G4Material* scintillatorMaterial,         // scintillator material
+                                 G4LogicalVolume* parentVolume,            // parent logical volume
+                                 G4LogicalVolume** outVolume,              // logical volume
                                  G4LogicalVolume** outScintillatorVolume,  // scintillator logical volume
-                                 G4Colour visColor
+                                 G4Colour visColor                         // colour for visualisation
                                  );
 
-    void ConstructSamplingEndcap(G4String baseName,
-                                 G4double endcapStart,
-                                 G4double endcapRadius,
-                                 G4double totalThickness,
-                                 G4double layerThickness,
-                                 G4double layerAbsorberThickness,
-                                 G4int numLayers,
-                                 G4Material* absorberMaterial,
-                                 G4Material* scintillatorMaterial,
-                                 G4LogicalVolume* parentVolume,
-                                 G4LogicalVolume** outVolume,
-                                 G4LogicalVolume** outScintillatorVolume,
-                                 G4Colour visColor
+    void ConstructSamplingEndcap(G4String baseName,                        // base name for volumes
+                                 G4double endcapStart,                     // detector start in Z
+                                 G4double endcapRadius,                    // radius for circular endcap
+                                 G4double totalThickness,                  // total thickness of barrel
+                                 G4double layerThickness,                  // layer thickness
+                                 G4double layerAbsorberThickness,          // absorber thickness
+                                 G4int numLayers,                          // number of layers
+                                 G4Material* absorberMaterial,             // absorber material
+                                 G4Material* scintillatorMaterial,         // scintillator material
+                                 G4LogicalVolume* parentVolume,            // parent logical volume
+                                 G4LogicalVolume** outVolume,              // logical volume
+                                 G4LogicalVolume** outScintillatorVolume,  // scintillator logical volume
+                                 G4Colour visColor                         // colour for visualisation
                                  );
 
     // Helper methods
@@ -147,7 +148,7 @@ private:
     G4UniformMagField* fMagneticField;
     G4double fMagneticFieldStrength;
     
-    // Configuration parameters with default values
+    // Detector configuration parameters
     G4double fTPCRadius;
     G4double fTPCLength;
     G4double fECalBarrelGap;
@@ -181,7 +182,14 @@ private:
     G4double fLArTotalLength;
     G4double fLArTotalWidth;
     G4double fLArTotalDepth;
-    
+
+    // Material properties
+    G4double fPressure;
+	G4double fRefPressure;
+	G4double fTemperature;
+    G4double fGasDensity;
+    G4double fFoamDensity;
+
     // Messenger for macro commands
     DetectorMessenger* fMessenger;
 };

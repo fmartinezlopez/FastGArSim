@@ -45,6 +45,10 @@ DetectorConstruction::DetectorConstruction()
   fLArModuleLength(100.0*cm), fLArModuleWidth(300.0*cm), fLArModuleDepth(100.0*cm),
   fLArModuleGap(1.0*cm), fLArInsulationThickness(1.0*mm), fLArCryostatThickness(5.0*cm),
   fLArEnableMuonWindow(true), fLArMuonWindowThickness(4.5*cm),
+  fPressure(10.13*bar), fRefPressure(1.01*bar), fTemperature(294.26*kelvin),
+  fGasDensity(0.001677*g/cm3), // at atm pressure (used in GArSoft -- need to check)
+  //fGasDensity(0.001677*g/cm3), // at atm pressure (from some random table)
+  fFoamDensity(0.2*g/cm3), // low density foam for muon window (200 kg/m³)
   fMessenger(nullptr),
   fGeometryInitialized(false)
 {
@@ -98,28 +102,17 @@ void DetectorConstruction::DefineMaterials()
     // Get needed elements
     G4double z, fractionmass;
 	G4int nel, natoms;
-
     G4Element* H  = nistManager->FindOrBuildElement("H");
     G4Element* C  = nistManager->FindOrBuildElement("C");
     G4Element* N  = nistManager->FindOrBuildElement("N");
     G4Element* O  = nistManager->FindOrBuildElement("O");
     G4Element* Ar = nistManager->FindOrBuildElement("Ar");
 	
-    // World material definition
+    // World material definition -- just air
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
 
-	// Reference temperature and pressure for gas
-	G4double fPressure    =  10.13; // bar
-	G4double fAtmPressure =   1.01; // bar
-	G4double fTemperature = 294.26; // K
-
-	// Gas mixture density
-	G4double p10Density = 0.001677*g/cm3; // at atm pressure (used in GArSoft -- need to check)
-    //G4double p10Density = 0.00159*g/cm3; // at atm pressure (from some random table)
-
 	// Define gas material
-	fGArTPCMaterial = new G4Material("P10", p10Density*fPressure/fAtmPressure, nel = 3, kStateGas, fTemperature*kelvin, fPressure*bar);
-
+	fGArTPCMaterial = new G4Material("GasMixture", fGasDensity*fPressure/fRefPressure, nel = 3, kStateGas, fTemperature, fPressure);
 	// Add elements to material
 	fGArTPCMaterial->AddElement(H,  fractionmass = 0.011);
 	fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
@@ -136,13 +129,11 @@ void DetectorConstruction::DefineMaterials()
     // Materials for LAr TPC
     fLArTPCMaterial = nistManager->FindOrBuildMaterial("G4_lAr"); // use pre-defined LAr material
     fLArCryostatMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
-    fLArInsulationMaterial = nistManager->FindOrBuildMaterial("G4_Al"); // Thin Al for optical isolation
+    fLArInsulationMaterial = nistManager->FindOrBuildMaterial("G4_Al"); // Al for module optical isolation
 
     // Material for low-density foam muon window
-    G4double foamDensity = 0.2*g/cm3;  // Low density foam (200 kg/m³)
-
     // Typical composition for polyurethane foam: (C3H8N2O)n
-    fLArMuonWindowMaterial = new G4Material("FiberglassFoam", foamDensity, nel = 4, kStateSolid);
+    fLArMuonWindowMaterial = new G4Material("FiberglassFoam", fFoamDensity, nel = 4, kStateSolid);
     fLArMuonWindowMaterial->AddElement(C, 3);
     fLArMuonWindowMaterial->AddElement(H, 8);
     fLArMuonWindowMaterial->AddElement(N, 2);
@@ -831,6 +822,16 @@ void DetectorConstruction::SetLArMuonWindowThickness(G4double thickness)
     G4cout << "LAr muon window thickness set to " << fLArMuonWindowThickness/cm << " cm" << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kLArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetPressure(G4double pressure)
+{
+    fPressure = pressure;
+    G4cout << "Gas pressure set to " << fPressure/bar << " bar" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();
     }
 }
