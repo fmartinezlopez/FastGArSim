@@ -56,11 +56,7 @@ DetectorConstruction::DetectorConstruction()
     // Define command interface
     DefineCommands();
     
-    // Define materials
-    DefineMaterials();
-
-    // Useful numerical quantities
-    ComputeDerivedQuantities();
+    fGeometryInitialized = true;
     
 }
 
@@ -84,11 +80,6 @@ void DetectorConstruction::ComputeDerivedQuantities()
 
 G4bool DetectorConstruction::UpdateGeometry()
 {
-    // Recalculate derived quantities
-    ComputeDerivedQuantities();
-    
-    G4cout << "Updating geometry..." << G4endl;
-    
     // Tell G4RunManager to rebuild geometry
     G4RunManager::GetRunManager()->ReinitializeGeometry();
     return true;
@@ -142,6 +133,9 @@ void DetectorConstruction::DefineMaterials()
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
+    // Define materials
+    DefineMaterials();
+    
     // Recalculate derived quantities
     ComputeDerivedQuantities();
 
@@ -161,7 +155,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             break;
     }
 
-    fGeometryInitialized = true;
     return fWorldPhysical;
 }
 
