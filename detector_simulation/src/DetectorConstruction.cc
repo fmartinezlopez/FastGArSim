@@ -443,7 +443,10 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
     barrelLogical->SetVisAttributes(barrelVisAtt);
     
     // Place barrel
-    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), barrelLogical, baseName+"_barrel_phys", parentVolume, false, 0);
+    G4double rotAngle = 90.*deg - 180.*deg / numSides;
+    G4RotationMatrix* rotation = new G4RotationMatrix();
+    rotation->rotateZ(rotAngle);
+    new G4PVPlacement(rotation, G4ThreeVector(0, 0, 0), barrelLogical, baseName+"_barrel_phys", parentVolume, false, 0);
 
     *outVolume = barrelLogical;
 
