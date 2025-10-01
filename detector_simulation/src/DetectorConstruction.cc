@@ -538,11 +538,15 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
     G4VisAttributes* endcapVisAtt = new G4VisAttributes(visColor);
     endcapVisAtt->SetVisibility(true);
     endcapLogical->SetVisAttributes(endcapVisAtt);
+
+    // Rotation matrix to flip the negative endcap
+    G4RotationMatrix* flip = new G4RotationMatrix();
+    flip->rotateY(180*deg);
     
     // Place endcaps
     G4double endcapZ = endcapStart + totalThickness/2;
     new G4PVPlacement(0, G4ThreeVector(0, 0, endcapZ), endcapLogical, baseName+"_endcap_pos_phys", parentVolume, false, 0);
-    new G4PVPlacement(0, G4ThreeVector(0, 0, -endcapZ), endcapLogical, baseName+"_endcap_neg_phys", parentVolume, false, 1);
+    new G4PVPlacement(flip, G4ThreeVector(0, 0, -endcapZ), endcapLogical, baseName+"_endcap_neg_phys", parentVolume, false, 1);
 
     *outVolume = endcapLogical;
 
