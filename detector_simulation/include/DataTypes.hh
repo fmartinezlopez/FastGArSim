@@ -10,10 +10,14 @@ struct TrajectoryPoint
   G4ThreeVector position;
   G4double time;
 
-  // Copy constructor (automatically generated, but listed explicitly for clarity)
+  // Add explicit constructor for brace-initialization
+  TrajectoryPoint(const G4ThreeVector& pos, G4double t) 
+    : position(pos), time(t) {}
+
+  // Copy constructor
   TrajectoryPoint(const TrajectoryPoint& other) = default;
   
-  // Assignment operator (automatically generated, but listed explicitly for clarity)
+  // Assignment operator
   TrajectoryPoint& operator=(const TrajectoryPoint& other) = default;
 };
 
@@ -21,10 +25,14 @@ struct MomentumPoint
 {
   G4ThreeVector momentum;
 
-  // Copy constructor (automatically generated, but listed explicitly for clarity)
+  // Add explicit constructor for brace-initialization
+  MomentumPoint(const G4ThreeVector& mom) 
+    : momentum(mom) {}
+
+  // Copy constructor
   MomentumPoint(const MomentumPoint& other) = default;
   
-  // Assignment operator (automatically generated, but listed explicitly for clarity)
+  // Assignment operator
   MomentumPoint& operator=(const MomentumPoint& other) = default;
 };
 
