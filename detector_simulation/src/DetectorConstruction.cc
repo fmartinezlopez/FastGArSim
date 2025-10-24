@@ -38,7 +38,11 @@ DetectorConstruction::DetectorConstruction()
   fMagneticField(nullptr), fMagneticFieldStrength(0.5*tesla),
   fTPCRadius(250.0*cm), fTPCLength(500.0*cm),
   fECalBarrelGap(20.0*cm), fECalEndcapGap(25.0*cm),
-  fECalAbsorberThickness(5.0*mm), fECalScintillatorThickness(10.0*mm), fECalNumSides(12), fECalLayers(42),
+  fECalNumSides(12),
+  fECalHGAbsorberThickness(0.7*mm), fECalHGScintillatorThickness(5.0*mm), fECalHGBoardThickness(1.0*mm),
+  fECalBarrelHGLayers(8), fECalEndcapHGLayers(6),
+  fECalLGAbsorberThickness(1.4*mm), fECalLGScintillatorThickness(10.0*mm),
+  fECalBarrelLGLayers(34), fECalEndcapLGLayers(36),
   fMuIDBarrelGap(50.0*cm),
   fMuIDAbsorberThickness(10.0*cm), fMuIDScintillatorThickness(2.0*cm), fMuIDNumSides(21), fMuIDLayers(3),
   fLArNModulesX(5), fLArNModulesY(1), fLArNModulesZ(7),
@@ -68,10 +72,12 @@ DetectorConstruction::~DetectorConstruction()
 void DetectorConstruction::ComputeDerivedQuantities()
 {
     // Define some numerical quantities that will be used extensively
-    fECalLayerThickness = fECalAbsorberThickness + fECalScintillatorThickness;
+    fECalHGLayerThickness = fECalHGAbsorberThickness + fECalHGScintillatorThickness + fECalHGBoardThickness;
+    fECalLGLayerThickness = fECalLGAbsorberThickness + fECalLGScintillatorThickness;
     fMuIDLayerThickness = fMuIDAbsorberThickness + fMuIDScintillatorThickness;
-    fECalTotalThickness = fECalLayerThickness*fECalLayers;
-    fMuIDTotalThickness = fMuIDLayerThickness*fMuIDLayers;
+    fECalBarrelTotalThickness = fECalHGLayerThickness * fECalBarrelHGLayers + fECalLGLayerThickness * fECalBarrelLGLayers;
+    fECalEndcapTotalThickness = fECalHGLayerThickness * fECalEndcapHGLayers + fECalLGLayerThickness * fECalEndcapLGLayers;
+    fMuIDTotalThickness = fMuIDLayerThickness * fMuIDLayers;
 
     fLArTotalLength = fLArNModulesX * fLArModuleLength + (fLArNModulesX + 1) * fLArModuleGap;
     fLArTotalWidth  = fLArNModulesY * fLArModuleWidth  + (fLArNModulesY + 1) * fLArModuleGap;
@@ -98,6 +104,30 @@ void DetectorConstruction::DefineMaterials()
     G4Element* N  = nistManager->FindOrBuildElement("N");
     G4Element* O  = nistManager->FindOrBuildElement("O");
     G4Element* Ar = nistManager->FindOrBuildElement("Ar");
+    G4Element* B  = nistManager->FindOrBuildElement("B");
+    G4Element* Na = nistManager->FindOrBuildElement("Na");
+    G4Element* Al = nistManager->FindOrBuildElement("Al");
+    G4Element* Si = nistManager->FindOrBuildElement("Si");
+    G4Element* K  = nistManager->FindOrBuildElement("K");
+    G4Element* Ti = nistManager->FindOrBuildElement("Ti");
+    G4Element* Zn = nistManager->FindOrBuildElement("Zn");
+
+    // Define epoxy material
+    G4Material* Epoxy = new G4Material("Epoxy", 1.25*g/cm3, 3);
+    Epoxy->AddElement(C, 6);
+    Epoxy->AddElement(H, 6);
+    Epoxy->AddElement(O, 1);
+
+    // Define glass material
+    G4Material* Glass = new G4Material("Glass", 2.7*g/cm3, 8);
+    Glass->AddElement(Si, 0.2743);  // Silicon: 27.43%
+    Glass->AddElement(B,  0.0166);  // Boron: 1.66%
+    Glass->AddElement(Al, 0.0207);  // Aluminum: 2.07%
+    Glass->AddElement(Na, 0.0449);  // Sodium: 4.49%
+    Glass->AddElement(K,  0.0821);  // Potassium: 8.21%
+    Glass->AddElement(Zn, 0.0882);  // Zinc: 8.82%
+    Glass->AddElement(Ti, 0.0292);  // Titanium: 2.92%
+    Glass->AddElement(O,  0.444);   // Oxygen: 44.4%
 	
     // World material definition -- just air
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
@@ -112,6 +142,9 @@ void DetectorConstruction::DefineMaterials()
     // Materials for ECal
     fECalAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_Pb");
     fECalScintillatorMaterial = nistManager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
+    fECalPCBMaterial = new G4Material("FR4", 1.85*g/cm3, 2);
+    fECalPCBMaterial->AddMaterial(Epoxy, 0.206);
+    fECalPCBMaterial->AddMaterial(Glass, 0.794);
     
     // Materials for MuID
     fMuIDAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
@@ -319,9 +352,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
 
     if (fGeometryType == kGArLike) {
         // Calculate world size based on GAr detector dimensions
-        worldSizeX = 2.5 * (fTPCRadius + fECalTotalThickness + fMuIDTotalThickness);
+        worldSizeX = 2.5 * (fTPCRadius + fECalBarrelTotalThickness + fMuIDTotalThickness);
         worldSizeY = worldSizeX;
-        worldSizeZ = 2.5 * (fTPCLength/2 + fECalTotalThickness + fMuIDTotalThickness);
+        worldSizeZ = 2.5 * (fTPCLength/2 + fECalEndcapTotalThickness + fMuIDTotalThickness);
     } else if (fGeometryType == kLArLike) {
         // Calculate world size based on LAr detector dimensions
         worldSizeX = 2.0 * fLArTotalLength;
@@ -349,8 +382,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
 void DetectorConstruction::ConstructFieldEnclosure()
 {
     // Calculate field enclosure size based on detector dimensions
-    G4double fieldEnclosureLength = fTPCLength + 2*fECalEndcapGap + 2*fECalTotalThickness;
-    G4double fieldEnclosureRadius = fTPCRadius + fECalBarrelGap + fECalTotalThickness + fMuIDBarrelGap;
+    G4double fieldEnclosureLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
+    G4double fieldEnclosureRadius = fTPCRadius + fECalBarrelGap + fECalBarrelTotalThickness + fMuIDBarrelGap;
 
     // Create field enclosure cylinder
     G4Tubs* fieldSolid = new G4Tubs("FieldEnclosure", 0, fieldEnclosureRadius, fieldEnclosureLength/2, 0, twopi);
@@ -384,23 +417,47 @@ void DetectorConstruction::ConstructTPC()
 void DetectorConstruction::ConstructECal()
 {
 
-    G4double ecalBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalTotalThickness;
+    G4double ecalBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
     G4double ecalBarrelInnerDistance = fTPCRadius + fECalBarrelGap;
 
-    ConstructSamplingBarrel("ECal", ecalBarrelTotalLength, ecalBarrelInnerDistance, fECalNumSides, fECalTotalThickness, fECalLayerThickness, fECalAbsorberThickness, fECalLayers, fECalAbsorberMaterial, fECalScintillatorMaterial, fFieldLogical, &fECalBarrelLogical, &fECalScintillatorLogical, G4Colour(0.0, 1.0, 0.0, 0.3));
+    ConstructSamplingBarrel("ECal",
+                            ecalBarrelTotalLength, ecalBarrelInnerDistance, fECalNumSides, fECalBarrelTotalThickness,
+                            fECalHGLayerThickness, fECalHGAbsorberThickness, fECalHGScintillatorThickness,
+                            fECalLGLayerThickness, fECalLGAbsorberThickness,
+                            fECalBarrelHGLayers, fECalBarrelLGLayers,
+                            fECalAbsorberMaterial, fECalScintillatorMaterial, fECalPCBMaterial,
+                            fFieldLogical,
+                            &fECalBarrelLogical, &fECalScintillatorLogical,
+                            G4Colour(0.0, 1.0, 0.0, 0.3));
 
     G4double ecalEndcapRadius = ecalBarrelInnerDistance / std::cos(pi / fECalNumSides);
     G4double ecalEndcapStart = fTPCLength/2 + fECalEndcapGap;
 
-    ConstructSamplingEndcap("ECal", ecalEndcapStart, ecalEndcapRadius, fECalTotalThickness, fECalLayerThickness, fECalAbsorberThickness, fECalLayers, fECalAbsorberMaterial, fECalScintillatorMaterial, fFieldLogical, &fECalEndcapsLogical, &fECalScintillatorLogical, G4Colour(0.0, 1.0, 0.0, 0.3));
+    ConstructSamplingEndcap("ECal",
+                            ecalEndcapStart, ecalEndcapRadius, fECalEndcapTotalThickness,
+                            fECalHGLayerThickness, fECalHGAbsorberThickness, fECalHGScintillatorThickness,
+                            fECalLGLayerThickness, fECalLGAbsorberThickness,
+                            fECalEndcapHGLayers, fECalEndcapLGLayers,
+                            fECalAbsorberMaterial, fECalScintillatorMaterial, fECalPCBMaterial,
+                            fFieldLogical,
+                            &fECalEndcapsLogical, &fECalScintillatorLogical,
+                            G4Colour(0.0, 1.0, 0.0, 0.3));
 }
 
 void DetectorConstruction::ConstructMuID()
 {
-    G4double muidBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalTotalThickness;
-    G4double muidBarrelInnerDistance = fTPCRadius + fECalBarrelGap + fECalTotalThickness + fMuIDBarrelGap;
+    G4double muidBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
+    G4double muidBarrelInnerDistance = fTPCRadius + fECalBarrelGap + fECalBarrelTotalThickness + fMuIDBarrelGap;
 
-    ConstructSamplingBarrel("MuID", muidBarrelTotalLength, muidBarrelInnerDistance, fMuIDNumSides, fMuIDTotalThickness, fMuIDLayerThickness, fMuIDAbsorberThickness, fMuIDLayers, fMuIDAbsorberMaterial, fMuIDScintillatorMaterial, fWorldLogical, &fMuIDLogical, &fMuIDScintillatorLogical, G4Colour(1.0, 0.0, 0.0, 0.3));
+    ConstructSamplingBarrel("MuID",
+                            muidBarrelTotalLength, muidBarrelInnerDistance, fMuIDNumSides, fMuIDTotalThickness,
+                            0.0, 0.0, 0.0,
+                            fMuIDLayerThickness, fMuIDAbsorberThickness,
+                            0, fMuIDLayers,
+                            fMuIDAbsorberMaterial, fMuIDScintillatorMaterial, fECalPCBMaterial,
+                            fWorldLogical,
+                            &fMuIDLogical, &fMuIDScintillatorLogical,
+                            G4Colour(1.0, 0.0, 0.0, 0.3));
 }
 
 void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
@@ -408,11 +465,16 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
                                                    G4double barrelInnerDistance,
                                                    G4int numSides,
                                                    G4double totalThickness,
-                                                   G4double layerThickness,
-                                                   G4double layerAbsorberThickness,
-                                                   G4int numLayers,
+                                                   G4double layerHGThickness,
+                                                   G4double layerHGAbsorberThickness,
+                                                   G4double layerHGScintillatorThickness,
+                                                   G4double layerLGThickness,
+                                                   G4double layerLGAbsorberThickness,
+                                                   G4int numHGLayers,
+                                                   G4int numLGLayers,
                                                    G4Material* absorberMaterial,
                                                    G4Material* scintillatorMaterial,
+                                                   G4Material* boardMaterial,
                                                    G4LogicalVolume* parentVolume,
                                                    G4LogicalVolume** outVolume,
                                                    G4LogicalVolume** outScintillatorVolume,
@@ -453,7 +515,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
     // Calculate segment angle
     G4double segmentAngle = phiTotal / numSides;
 
-    // 
+    // Set visualisation attributes
     G4VisAttributes* segmentVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));
     segmentVisAtt->SetVisibility(false);
 
@@ -462,6 +524,9 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
 
     G4VisAttributes* absorberVisAtt = new G4VisAttributes(visColor);
     absorberVisAtt->SetVisibility(false);
+
+    G4VisAttributes* boardVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));
+    boardVisAtt->SetVisibility(false);
     
     // Create segments (one for each face)
     for (G4int segmentIndex = 0; segmentIndex < numSides; segmentIndex++) {
@@ -478,13 +543,65 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
         // Place segment
         new G4PVPlacement(nullptr, G4ThreeVector(), segmentLogical, baseName+"_barrel_Segment_phys", barrelLogical, false, segmentIndex, true);
         
-        // Create layers within each segment
-        for (G4int layerIndex = 0; layerIndex < numLayers; layerIndex++) {
+        // Create HG layers within each segment
+        for (G4int layerIndex = 0; layerIndex < numHGLayers; layerIndex++) {
 
             // Calculate inner and outer radii for this layer
-            G4double layerInnerRadius = innerRadius + layerIndex * layerThickness;
-            G4double absorberOuterRadius = layerInnerRadius + layerAbsorberThickness;
-            G4double layerOuterRadius = layerInnerRadius + layerThickness;
+            G4double layerInnerRadius = innerRadius + layerIndex * layerHGThickness;
+            G4double absorberOuterRadius = layerInnerRadius + layerHGAbsorberThickness;
+            G4double scintillatorOuterRadius = absorberOuterRadius + layerHGScintillatorThickness;
+            G4double layerOuterRadius = layerInnerRadius + layerHGThickness;
+            
+            // Initialize layer radii arrays
+            G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
+            G4double absorberROuter[] = {absorberOuterRadius, absorberOuterRadius};
+            G4double scintillatorROuter[] = {scintillatorOuterRadius, scintillatorOuterRadius};
+            G4double layerROuter[]    = {layerOuterRadius, layerOuterRadius};
+            
+            // Create absorber layer
+            G4Polyhedra* absorberSolid = new G4Polyhedra(baseName+"_barrel_HG_Absorber", segmentPhiStart, segmentAngle, 1, 2, zPlanes, layerRInner, absorberROuter);
+            G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_barrel_HG_Absorber_log");
+
+            absorberLogical->SetVisAttributes(absorberVisAtt);
+            
+            // Place absorber layer
+            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_HG_Absorber_phys", segmentLogical, false, layerIndex, true);
+            
+            // Create scintillator layer
+            G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_HG_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, scintillatorROuter);
+            G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_barrel_HG_Scintillator_log");
+
+            scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
+            
+            // Place scintillator layer
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_HG_Scintillator_phys", segmentLogical, false, layerIndex, true);
+            
+            // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
+            if (layerIndex == 0) {
+                *outScintillatorVolume = scintillatorLogical;
+            }
+
+            // Create PCB layer
+            G4Polyhedra* boardSolid = new G4Polyhedra(baseName+"_barrel_HG_PCB", segmentPhiStart, segmentAngle, 1, 2, zPlanes, scintillatorROuter, layerROuter);
+            G4LogicalVolume* boardLogical = new G4LogicalVolume(boardSolid, boardMaterial, baseName+"_barrel_HG_PCB_log");
+
+            boardLogical->SetVisAttributes(boardVisAtt);
+            
+            // Place PCB layer
+            new G4PVPlacement(nullptr, G4ThreeVector(), boardLogical, baseName+"_barrel_HG_PCB_phys", segmentLogical, false, layerIndex, true);
+
+        }
+
+        // LG layers start at an offset inner radius
+        G4double innerLGRadius = innerRadius + numHGLayers * layerHGThickness;
+
+        // Create LG layers within each segment
+        for (G4int layerIndex = 0; layerIndex < numLGLayers; layerIndex++) {
+
+            // Calculate inner and outer radii for this layer
+            G4double layerInnerRadius = innerLGRadius + layerIndex * layerLGThickness;
+            G4double absorberOuterRadius = layerInnerRadius + layerLGAbsorberThickness;
+            G4double layerOuterRadius = layerInnerRadius + layerLGThickness;
             
             // Initialize layer radii arrays
             G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
@@ -492,22 +609,22 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             G4double layerROuter[]    = {layerOuterRadius, layerOuterRadius};
             
             // Create absorber layer
-            G4Polyhedra* absorberSolid = new G4Polyhedra(baseName+"_barrel_Absorber", segmentPhiStart, segmentAngle, 1, 2, zPlanes, layerRInner, absorberROuter);
-            G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_barrel_Absorber_log");
+            G4Polyhedra* absorberSolid = new G4Polyhedra(baseName+"_barrel_LG_Absorber", segmentPhiStart, segmentAngle, 1, 2, zPlanes, layerRInner, absorberROuter);
+            G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_barrel_LG_Absorber_log");
 
             absorberLogical->SetVisAttributes(absorberVisAtt);
             
             // Place absorber layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_Absorber_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_LG_Absorber_phys", segmentLogical, false, layerIndex, true);
             
             // Create scintillator layer
-            G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, layerROuter);
-            G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_barrel_Scintillator_log");
+            G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_LG_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, layerROuter);
+            G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_barrel_LG_Scintillator_log");
 
             scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
             
             // Place scintillator layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_Scintillator_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex, true);
             
             // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
             if (layerIndex == 0) {
@@ -515,6 +632,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             }
 
         }
+
     }
 
 }
@@ -523,11 +641,16 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
                                                    G4double endcapStart,
                                                    G4double endcapRadius,
                                                    G4double totalThickness,
-                                                   G4double layerThickness,
-                                                   G4double layerAbsorberThickness,
-                                                   G4int numLayers,
+                                                   G4double layerHGThickness,
+                                                   G4double layerHGAbsorberThickness,
+                                                   G4double layerHGScintillatorThickness,
+                                                   G4double layerLGThickness,
+                                                   G4double layerLGAbsorberThickness,
+                                                   G4int numHGLayers,
+                                                   G4int numLGLayers,
                                                    G4Material* absorberMaterial,
                                                    G4Material* scintillatorMaterial,
+                                                   G4Material* boardMaterial,
                                                    G4LogicalVolume* parentVolume,
                                                    G4LogicalVolume** outVolume,
                                                    G4LogicalVolume** outScintillatorVolume,
@@ -561,35 +684,88 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
     G4VisAttributes* absorberVisAtt = new G4VisAttributes(visColor);
     absorberVisAtt->SetVisibility(false);
 
-    // Create layer structure
-    for (G4int layerIndex = 0; layerIndex < numLayers; layerIndex++) {
+    G4VisAttributes* boardVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));
+    boardVisAtt->SetVisibility(false);
+
+    // Create HG layer structure
+    for (G4int layerIndex = 0; layerIndex < numHGLayers; layerIndex++) {
 
         // Calculate z distance for this layer
-        G4double layerAbsorberZ = layerPosition + layerAbsorberThickness/2;
+        G4double layerAbsorberZ = layerPosition + layerHGAbsorberThickness/2;
 
         // Create absorber layer
-        G4Tubs* absorberSolid = new G4Tubs(baseName+"_endcap_Absorber", 0, endcapRadius, layerAbsorberThickness/2, 0, twopi);
-        G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_endcap_Absorber_log");
+        G4Tubs* absorberSolid = new G4Tubs(baseName+"_endcap_HG_Absorber", 0, endcapRadius, layerHGAbsorberThickness/2, 0, twopi);
+        G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_endcap_HG_Absorber_log");
 
         absorberLogical->SetVisAttributes(absorberVisAtt);
         
         // Place absorber layer
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerAbsorberZ), absorberLogical, baseName+"_endcap_Absorber_phys", endcapLogical, false, layerIndex, true);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerAbsorberZ), absorberLogical, baseName+"_endcap_HG_Absorber_phys", endcapLogical, false, layerIndex, true);
         
-        layerPosition += layerAbsorberThickness;
+        layerPosition += layerHGAbsorberThickness;
 
-        G4double layerScintillatorZ = layerPosition + (layerThickness - layerAbsorberThickness)/2;
+        G4double layerScintillatorZ = layerPosition + layerHGScintillatorThickness/2;
 
         // Create scintillator layer
-        G4Tubs* scintillatorSolid = new G4Tubs(baseName+"_endcap_Scintillator", 0, endcapRadius, (layerThickness - layerAbsorberThickness)/2, 0, twopi);
-        G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_endcap_Scintillator_log");
+        G4Tubs* scintillatorSolid = new G4Tubs(baseName+"_endcap_HG_Scintillator", 0, endcapRadius, layerHGScintillatorThickness/2, 0, twopi);
+        G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_endcap_HG_Scintillator_log");
 
         scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
         
         // Place scintillator layer
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_Scintillator_phys", endcapLogical, false, layerIndex, true);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_HG_Scintillator_phys", endcapLogical, false, layerIndex, true);
         
-        layerPosition += (layerThickness - layerAbsorberThickness);
+        layerPosition += layerHGScintillatorThickness;
+
+        // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
+        if (layerIndex == 0) {
+            *outScintillatorVolume = scintillatorLogical;
+        }
+
+        G4double layerBoardZ = layerPosition + (layerHGThickness - layerHGAbsorberThickness - layerHGScintillatorThickness)/2;
+
+        // Create PCB layer
+        G4Tubs* boardSolid = new G4Tubs(baseName+"_endcap_HG_PCB", 0, endcapRadius, (layerHGThickness - layerHGAbsorberThickness - layerHGScintillatorThickness)/2, 0, twopi);
+        G4LogicalVolume* boardLogical = new G4LogicalVolume(boardSolid, boardMaterial, baseName+"_endcap_HG_PCB_log");
+
+        boardLogical->SetVisAttributes(boardVisAtt);
+        
+        // Place PCB layer
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerBoardZ), boardLogical, baseName+"_endcap_HG_PCB_phys", endcapLogical, false, layerIndex, true);
+        
+        layerPosition += (layerHGThickness - layerHGAbsorberThickness - layerHGScintillatorThickness);
+
+    }
+
+    // Create LG layer structure
+    for (G4int layerIndex = 0; layerIndex < numLGLayers; layerIndex++) {
+
+        // Calculate z distance for this layer
+        G4double layerAbsorberZ = layerPosition + layerLGAbsorberThickness/2;
+
+        // Create absorber layer
+        G4Tubs* absorberSolid = new G4Tubs(baseName+"_endcap_LG_Absorber", 0, endcapRadius, layerLGAbsorberThickness/2, 0, twopi);
+        G4LogicalVolume* absorberLogical = new G4LogicalVolume(absorberSolid, absorberMaterial, baseName+"_endcap_LG_Absorber_log");
+
+        absorberLogical->SetVisAttributes(absorberVisAtt);
+        
+        // Place absorber layer
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerAbsorberZ), absorberLogical, baseName+"_endcap_LG_Absorber_phys", endcapLogical, false, layerIndex, true);
+        
+        layerPosition += layerLGAbsorberThickness;
+
+        G4double layerScintillatorZ = layerPosition + (layerLGThickness - layerLGAbsorberThickness)/2;
+
+        // Create scintillator layer
+        G4Tubs* scintillatorSolid = new G4Tubs(baseName+"_endcap_LG_Scintillator", 0, endcapRadius, (layerLGThickness - layerLGAbsorberThickness)/2, 0, twopi);
+        G4LogicalVolume* scintillatorLogical = new G4LogicalVolume(scintillatorSolid, scintillatorMaterial, baseName+"_endcap_LG_Scintillator_log");
+
+        scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
+        
+        // Place scintillator layer
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_LG_Scintillator_phys", endcapLogical, false, layerIndex, true);
+        
+        layerPosition += (layerLGThickness - layerLGAbsorberThickness);
 
         // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
         if (layerIndex == 0) {
@@ -656,30 +832,90 @@ void DetectorConstruction::SetTPCLength(G4double length)
     }
 }
 
-void DetectorConstruction::SetECalAbsorberThickness(G4double thickness)
+void DetectorConstruction::SetECalHGAbsorberThickness(G4double thickness)
 {
-    fECalAbsorberThickness = thickness;
-    G4cout << "ECal absorber thickness set to " << fECalAbsorberThickness/mm << " mm" << G4endl;
+    fECalHGAbsorberThickness = thickness;
+    G4cout << "ECal HG absorber thickness set to " << fECalHGAbsorberThickness/mm << " mm" << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();
     }
 }
 
-void DetectorConstruction::SetECalScintillatorThickness(G4double thickness)
+void DetectorConstruction::SetECalHGScintillatorThickness(G4double thickness)
 {
-    fECalScintillatorThickness = thickness;
-    G4cout << "ECal scintillator thickness set to " << fECalScintillatorThickness/mm << " mm" << G4endl;
+    fECalHGScintillatorThickness = thickness;
+    G4cout << "ECal HG scintillator thickness set to " << fECalHGScintillatorThickness/mm << " mm" << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();
     }
 }
 
-void DetectorConstruction::SetECalLayers(G4int layers)
+void DetectorConstruction::SetECalHGBoardThickness(G4double thickness)
 {
-    fECalLayers = layers;
-    G4cout << "ECal layers set to " << fECalLayers << G4endl;
+    fECalHGBoardThickness = thickness;
+    G4cout << "ECal HG PCB thickness set to " << fECalHGBoardThickness/mm << " mm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalLGAbsorberThickness(G4double thickness)
+{
+    fECalLGAbsorberThickness = thickness;
+    G4cout << "ECal LG absorber thickness set to " << fECalLGAbsorberThickness/mm << " mm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalLGScintillatorThickness(G4double thickness)
+{
+    fECalLGScintillatorThickness = thickness;
+    G4cout << "ECal LG scintillator thickness set to " << fECalLGScintillatorThickness/mm << " mm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalBarrelHGLayers(G4int layers)
+{
+    fECalBarrelHGLayers = layers;
+    G4cout << "ECal barrel HG layers set to " << fECalBarrelHGLayers << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalBarrelLGLayers(G4int layers)
+{
+    fECalBarrelLGLayers = layers;
+    G4cout << "ECal barrel LG layers set to " << fECalBarrelLGLayers << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalEndcapHGLayers(G4int layers)
+{
+    fECalEndcapHGLayers = layers;
+    G4cout << "ECal end cap HG layers set to " << fECalEndcapHGLayers << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalEndcapLGLayers(G4int layers)
+{
+    fECalEndcapLGLayers = layers;
+    G4cout << "ECal end cap LG layers set to " << fECalEndcapLGLayers << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();

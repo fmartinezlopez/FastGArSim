@@ -14,8 +14,6 @@
 # Initialize detector
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
-/detector/ECalLayers 42
-/detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 
 # Initialize random number generator
