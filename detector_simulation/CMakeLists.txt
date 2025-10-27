@@ -58,8 +58,10 @@ target_link_libraries(GArSimulation ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
 # relies on these scripts being in the current working directory.
 set(SCRIPTS
   macros/init.mac
+  macros/init_gun.mac
   macros/run.mac
   macros/nu.mac
+  macros/gun.mac
   macros/vis.mac
   )
 

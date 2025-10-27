@@ -1,0 +1,27 @@
+# Macro file for initializing GArSimulation
+#
+# Set verbosity level
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+
+# Initialize physics
+/physics/emModel emstandard_opt4
+/physics/hadronicModel FTFP_BERT
+/physics/cutValue 1.0 mm
+
+# Initialize detector
+/detector/TPCRadius 260 cm
+/detector/TPCLength 500 cm
+/detector/GasPressure 10.0 bar
+
+# Initialize random number generator
+/random/setSeeds 123456 654321
+
+/run/OutputFileName gun
+
+# Initialize the kernel
+/run/initialize
+
+/analysis/EnergyCut 0.001 MeV
