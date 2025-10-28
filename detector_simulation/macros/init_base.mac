@@ -14,6 +14,11 @@
 # Initialize detector
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
+/detector/ECalBarrelHGLayers 8 
+/detector/ECalBarrelLGLayers 34 
+/detector/ECalEndcapHGLayers 6 
+/detector/ECalEndcapLGLayers 36 
+/detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 
 # Initialize random number generator
@@ -25,7 +30,7 @@
 /generator/genieFile root://fndca1.fnal.gov:1094//pnfs/fnal.gov/usr/dune/persistent/users/fmlopez/FastGArSim/input/numu_argon_G18_10a_gst.root
 # If running locally
 #/generator/genieFile /exp/dune/data/users/yinrui/data2/NuGenerator/numu_argon_G18_10a_gst.root
-/generator/initialEvent 0
+/generator/initialEvent first_event
 
 /run/OutputFileName test
 
