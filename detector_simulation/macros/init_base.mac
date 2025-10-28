@@ -14,7 +14,10 @@
 # Initialize detector
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
-/detector/ECalLayers 42
+/detector/ECalBarrelHGLayers 8 
+/detector/ECalBarrelLGLayers 34 
+/detector/ECalEndcapHGLayers 6 
+/detector/ECalEndcapLGLayers 36 
 /detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 

@@ -58,6 +58,7 @@ target_link_libraries(GArSimulation ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
 # relies on these scripts being in the current working directory.
 set(SCRIPTS
   macros/init.mac
+  macros/init_base.mac
   macros/init_gun.mac
   macros/run.mac
   macros/nu.mac
@@ -72,6 +73,12 @@ foreach(_script ${SCRIPTS})
     COPYONLY
     )
 endforeach()
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/EventToNtupleConverter.C   # source location
+  ${PROJECT_BINARY_DIR}/EventToNtupleConverter.C   # destination in build tree
+  COPYONLY                                          # just copy, don’t process
+)
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
