@@ -19,15 +19,7 @@
 # Initialize random number generator
 /random/setSeeds 123456 654321
 
-# Uses the GENIE input file
-/generator/select genie
-# If running on the grid
-/generator/genieFile root://fndca1.fnal.gov:1094//pnfs/fnal.gov/usr/dune/persistent/users/fmlopez/FastGArSim/input/numu_argon_G18_10a_gst.root
-# If running locally
-#/generator/genieFile /exp/dune/data/users/yinrui/data2/NuGenerator/numu_argon_G18_10a_gst.root
-/generator/initialEvent 0
-
-/run/OutputFileName test
+/run/OutputFileName gun
 
 # Initialize the kernel
 /run/initialize

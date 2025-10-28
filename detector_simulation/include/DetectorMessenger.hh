@@ -26,9 +26,15 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithAString*        fGeometryCmd;
     G4UIcmdWithADoubleAndUnit* fTPCRadiusCmd;
     G4UIcmdWithADoubleAndUnit* fTPCLengthCmd;
-    G4UIcmdWithADoubleAndUnit* fECalAbsorberThicknessCmd;
-    G4UIcmdWithADoubleAndUnit* fECalScintillatorThicknessCmd;
-    G4UIcmdWithAnInteger*      fECalLayersCmd;
+    G4UIcmdWithADoubleAndUnit* fECalHGAbsorberThicknessCmd;
+    G4UIcmdWithADoubleAndUnit* fECalHGScintillatorThicknessCmd;
+    G4UIcmdWithADoubleAndUnit* fECalHGBoardThicknessCmd;
+    G4UIcmdWithADoubleAndUnit* fECalLGAbsorberThicknessCmd;
+    G4UIcmdWithADoubleAndUnit* fECalLGScintillatorThicknessCmd;
+    G4UIcmdWithAnInteger*      fECalBarrelHGLayersCmd;
+    G4UIcmdWithAnInteger*      fECalBarrelLGLayersCmd;
+    G4UIcmdWithAnInteger*      fECalEndcapHGLayersCmd;
+    G4UIcmdWithAnInteger*      fECalEndcapLGLayersCmd;
     G4UIcmdWithADoubleAndUnit* fMuIDAbsorberThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fMuIDScintillatorThicknessCmd;
     G4UIcmdWithAnInteger*      fMuIDLayersCmd;

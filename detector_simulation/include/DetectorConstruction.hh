@@ -32,6 +32,7 @@ public:
     G4bool UpdateGeometry();
     
     // Getter methods
+    G4VPhysicalVolume* GetWorldVolume() const { return fWorldPhysical; }
     G4LogicalVolume* GetTPCSensLogical()  const { return fTPCLogical; }
     G4LogicalVolume* GetECalSensLogical() const { return fECalScintillatorLogical; }
     G4LogicalVolume* GetMuIDSensLogical() const { return fMuIDScintillatorLogical; }
@@ -40,9 +41,15 @@ public:
     void SetGeometryType(G4String type);
     void SetTPCRadius(G4double radius);
     void SetTPCLength(G4double length);
-    void SetECalAbsorberThickness(G4double thickness);
-    void SetECalScintillatorThickness(G4double thickness);
-    void SetECalLayers(G4int layers);
+    void SetECalHGAbsorberThickness(G4double thickness);
+    void SetECalHGScintillatorThickness(G4double thickness);
+    void SetECalHGBoardThickness(G4double thickness);
+    void SetECalLGAbsorberThickness(G4double thickness);
+    void SetECalLGScintillatorThickness(G4double thickness);
+    void SetECalBarrelHGLayers(G4int layers);
+    void SetECalBarrelLGLayers(G4int layers);
+    void SetECalEndcapHGLayers(G4int layers);
+    void SetECalEndcapLGLayers(G4int layers);
     void SetMuIDAbsorberThickness(G4double thickness);
     void SetMuIDScintillatorThickness(G4double thickness);
     void SetMuIDLayers(G4int layers);
@@ -86,11 +93,16 @@ private:
                                  G4double barrelInnerDistance,             // apothem of inner polygon
                                  G4int numSides,                           // number of sides
                                  G4double totalThickness,                  // total thickness of barrel
-                                 G4double layerThickness,                  // layer thickness
-                                 G4double layerAbsorberThickness,          // absorber thickness
-                                 G4int numLayers,                          // number of layers
+                                 G4double layerHGThickness,                // HG layer thickness
+                                 G4double layerHGAbsorberThickness,        // HG absorber thickness
+                                 G4double layerHGScintillatorThickness,    // HG scintillator thickness
+                                 G4double layerLGThickness,                // LG layer thickness
+                                 G4double layerLGAbsorberThickness,        // LG absorber thickness
+                                 G4int numHGLayers,                        // number of HG layers
+                                 G4int numLGLayers,                        // number of LG layers
                                  G4Material* absorberMaterial,             // absorber material
                                  G4Material* scintillatorMaterial,         // scintillator material
+                                 G4Material* boardMaterial,                // PCB material
                                  G4LogicalVolume* parentVolume,            // parent logical volume
                                  G4LogicalVolume** outVolume,              // logical volume
                                  G4LogicalVolume** outScintillatorVolume,  // scintillator logical volume
@@ -101,11 +113,16 @@ private:
                                  G4double endcapStart,                     // detector start in Z
                                  G4double endcapRadius,                    // radius for circular endcap
                                  G4double totalThickness,                  // total thickness of barrel
-                                 G4double layerThickness,                  // layer thickness
-                                 G4double layerAbsorberThickness,          // absorber thickness
-                                 G4int numLayers,                          // number of layers
+                                 G4double layerHGThickness,                // HG layer thickness
+                                 G4double layerHGAbsorberThickness,        // HG absorber thickness
+                                 G4double layerHGScintillatorThickness,    // HG scintillator thickness
+                                 G4double layerLGThickness,                // LG layer thickness
+                                 G4double layerLGAbsorberThickness,        // LG absorber thickness
+                                 G4int numHGLayers,                        // number of HG layers
+                                 G4int numLGLayers,                        // number of LG layers
                                  G4Material* absorberMaterial,             // absorber material
                                  G4Material* scintillatorMaterial,         // scintillator material
+                                 G4Material* boardMaterial,                // PCB material
                                  G4LogicalVolume* parentVolume,            // parent logical volume
                                  G4LogicalVolume** outVolume,              // logical volume
                                  G4LogicalVolume** outScintillatorVolume,  // scintillator logical volume
@@ -120,6 +137,7 @@ private:
     G4Material* fGArTPCMaterial;
     G4Material* fECalAbsorberMaterial;
     G4Material* fECalScintillatorMaterial;
+    G4Material* fECalPCBMaterial;
     G4Material* fMuIDScintillatorMaterial;
     G4Material* fMuIDAbsorberMaterial;
     G4Material* fLArTPCMaterial;
@@ -148,47 +166,59 @@ private:
     G4UniformMagField* fMagneticField;
     G4double fMagneticFieldStrength;
     
-    // Detector configuration parameters
-    G4double fTPCRadius;
-    G4double fTPCLength;
-    G4double fECalBarrelGap;
-    G4double fECalEndcapGap;
-    G4double fECalAbsorberThickness;
-    G4double fECalScintillatorThickness;
-    G4int    fECalNumSides;
-    G4int    fECalLayers;
-    G4double fMuIDBarrelGap;
-    G4double fMuIDAbsorberThickness;
-    G4double fMuIDScintillatorThickness;
-    G4int    fMuIDNumSides;
-    G4int    fMuIDLayers;
-    G4int    fLArNModulesX;
-    G4int    fLArNModulesY;
-    G4int    fLArNModulesZ;
-    G4double fLArModuleLength;
-    G4double fLArModuleWidth;
-    G4double fLArModuleDepth;
-    G4double fLArModuleGap;
-    G4double fLArInsulationThickness;
-    G4double fLArCryostatThickness;
-    G4bool   fLArEnableMuonWindow;
-    G4double fLArMuonWindowThickness;
+    // Detector configuration parameters (GAr)
+    G4double fTPCRadius;                       // radius of TPC
+    G4double fTPCLength;                       // length of TPC
+    G4double fECalBarrelGap;                   // distance between TPC and inner apothem of ECal barrel
+    G4double fECalEndcapGap;                   // distance between TPC and start of ECal endcap (drift direction)
+    G4double fECalHGAbsorberThickness;         // absorber thickness in high-granularity ECal layers
+    G4double fECalHGScintillatorThickness;     // scintillator thickness in high-granularity ECal layers
+    G4double fECalHGBoardThickness;            // PCB thickness in high-granularity ECal layers (for tiles only)
+    G4double fECalLGAbsorberThickness;         // absorber thickness in low-granularity ECal layers
+    G4double fECalLGScintillatorThickness;     // scintillator thickness in low-granularity ECal layers
+    G4int    fECalNumSides;                    // number of sides for ECal barrel polyhedron
+    G4int    fECalBarrelHGLayers;              // number of ECal barrel high-granularity layers
+    G4int    fECalBarrelLGLayers;              // number of ECal barrel low-granularity layers
+    G4int    fECalEndcapHGLayers;              // number of ECal end cap high-granularity layers
+    G4int    fECalEndcapLGLayers;              // number of ECal end cap low-granularity layers
+    G4double fMuIDBarrelGap;                   // distance between TPC and inner apothem of MuID barrel
+    G4double fMuIDAbsorberThickness;           // absorber thickness in MuID layers
+    G4double fMuIDScintillatorThickness;       // scintillator thickness in MuID layers
+    G4int    fMuIDNumSides;                    // number of sides for MuID barrel polyhedron
+    G4int    fMuIDLayers;                      // number of MuID layers
 
-    // Derived configuration parameters
-    G4double fECalLayerThickness;
-    G4double fMuIDLayerThickness;
-    G4double fECalTotalThickness;
-    G4double fMuIDTotalThickness;
-    G4double fLArTotalLength;
-    G4double fLArTotalWidth;
-    G4double fLArTotalDepth;
+    // Detector configuration parameters (LAr)
+    G4int    fLArNModulesX;                    // number of TPC modules in X direction (drift direction)
+    G4int    fLArNModulesY;                    // number of TPC modules in Y direction (vertical direction)
+    G4int    fLArNModulesZ;                    // number of TPC modules in Z direction (beam direction)
+    G4double fLArModuleLength;                 // length of TPC modules (drift direction)
+    G4double fLArModuleWidth;                  // width of TPC modules (vertical direction)
+    G4double fLArModuleDepth;                  // depth of TPC modules (beam direction)
+    G4double fLArModuleGap;                    // distance between TPC modules
+    G4double fLArInsulationThickness;          // thickness of optical isolation layer
+    G4double fLArCryostatThickness;            // thickness of steel cryostat
+    G4bool   fLArEnableMuonWindow;             // add low-density downstream muon window?
+    G4double fLArMuonWindowThickness;          // low-density muon window thickness
+
+    // Derived configuration parameters (GAr)
+    G4double fECalHGLayerThickness;            // thickness of high-granularity ECal layers
+    G4double fECalLGLayerThickness;            // thickness of low-granularity ECal layers
+    G4double fMuIDLayerThickness;              // thickness of MuID layers
+    G4double fECalBarrelTotalThickness;        // ECal barrel total thickness
+    G4double fECalEndcapTotalThickness;        // ECal end cap total thickness
+    G4double fMuIDTotalThickness;              // MuID total thickness
+
+    // Derived configuration parameters (LAr)
+    G4double fLArTotalLength;                  // LAr TPC array total length (drift direction)
+    G4double fLArTotalWidth;                   // LAr TPC array total width (vertical direction)
+    G4double fLArTotalDepth;                   // LAr TPC array total depth (beam direction)
 
     // Material properties
-    G4double fPressure;
-	G4double fRefPressure;
-	G4double fTemperature;
-    G4double fGasDensity;
-    G4double fFoamDensity;
+    G4double fPressure;                        // pressure in HPgTPC
+	G4double fRefPressure;                     // reference pressure for gas density
+	G4double fTemperature;                     // pressure in HPgTPC
+    G4double fGasDensity;                      // gas density at reference conditions
+    G4double fFoamDensity;                     // muon window density (LAr)
 
     // Messenger for macro commands
     DetectorMessenger* fMessenger;

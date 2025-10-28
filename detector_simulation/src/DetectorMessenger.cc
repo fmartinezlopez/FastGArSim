@@ -40,25 +40,64 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fTPCLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // ECal commands
-  fECalAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalAbsorberThickness", this);
-  fECalAbsorberThicknessCmd->SetGuidance("Set ECal absorber thickness");
-  fECalAbsorberThicknessCmd->SetParameterName("Thickness", false);
-  fECalAbsorberThicknessCmd->SetUnitCategory("Length");
-  fECalAbsorberThicknessCmd->SetRange("Thickness>0.");
-  fECalAbsorberThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fECalHGAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalHGAbsorberThickness", this);
+  fECalHGAbsorberThicknessCmd->SetGuidance("Set ECal HG absorber thickness");
+  fECalHGAbsorberThicknessCmd->SetParameterName("Thickness", false);
+  fECalHGAbsorberThicknessCmd->SetUnitCategory("Length");
+  fECalHGAbsorberThicknessCmd->SetRange("Thickness>0.");
+  fECalHGAbsorberThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-  fECalScintillatorThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalScintillatorThickness", this);
-  fECalScintillatorThicknessCmd->SetGuidance("Set ECal scintillator thickness");
-  fECalScintillatorThicknessCmd->SetParameterName("Thickness", false);
-  fECalScintillatorThicknessCmd->SetUnitCategory("Length");
-  fECalScintillatorThicknessCmd->SetRange("Thickness>0.");
-  fECalScintillatorThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fECalHGScintillatorThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalHGScintillatorThickness", this);
+  fECalHGScintillatorThicknessCmd->SetGuidance("Set ECal HG scintillator thickness");
+  fECalHGScintillatorThicknessCmd->SetParameterName("Thickness", false);
+  fECalHGScintillatorThicknessCmd->SetUnitCategory("Length");
+  fECalHGScintillatorThicknessCmd->SetRange("Thickness>0.");
+  fECalHGScintillatorThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-  fECalLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalLayers", this);
-  fECalLayersCmd->SetGuidance("Set number of layers in ECal");
-  fECalLayersCmd->SetParameterName("Layers", false);
-  fECalLayersCmd->SetRange("Layers>0");
-  fECalLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fECalHGBoardThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalHGBoardThickness", this);
+  fECalHGBoardThicknessCmd->SetGuidance("Set ECal HG PCB thickness");
+  fECalHGBoardThicknessCmd->SetParameterName("Thickness", false);
+  fECalHGBoardThicknessCmd->SetUnitCategory("Length");
+  fECalHGBoardThicknessCmd->SetRange("Thickness>0.");
+  fECalHGBoardThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalLGAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalLGAbsorberThickness", this);
+  fECalLGAbsorberThicknessCmd->SetGuidance("Set ECal LG absorber thickness");
+  fECalLGAbsorberThicknessCmd->SetParameterName("Thickness", false);
+  fECalLGAbsorberThicknessCmd->SetUnitCategory("Length");
+  fECalLGAbsorberThicknessCmd->SetRange("Thickness>0.");
+  fECalLGAbsorberThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalLGScintillatorThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalLGScintillatorThickness", this);
+  fECalLGScintillatorThicknessCmd->SetGuidance("Set ECal LG scintillator thickness");
+  fECalLGScintillatorThicknessCmd->SetParameterName("Thickness", false);
+  fECalLGScintillatorThicknessCmd->SetUnitCategory("Length");
+  fECalLGScintillatorThicknessCmd->SetRange("Thickness>0.");
+  fECalLGScintillatorThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalBarrelHGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalBarrelHGLayers", this);
+  fECalBarrelHGLayersCmd->SetGuidance("Set number of HG layers in ECal barrel");
+  fECalBarrelHGLayersCmd->SetParameterName("Layers", false);
+  fECalBarrelHGLayersCmd->SetRange("Layers>0");
+  fECalBarrelHGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalBarrelLGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalBarrelLGLayers", this);
+  fECalBarrelLGLayersCmd->SetGuidance("Set number of LG layers in ECal barrel");
+  fECalBarrelLGLayersCmd->SetParameterName("Layers", false);
+  fECalBarrelLGLayersCmd->SetRange("Layers>0");
+  fECalBarrelLGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalEndcapHGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalEndcapHGLayers", this);
+  fECalEndcapHGLayersCmd->SetGuidance("Set number of HG layers in ECal end cap");
+  fECalEndcapHGLayersCmd->SetParameterName("Layers", false);
+  fECalEndcapHGLayersCmd->SetRange("Layers>0");
+  fECalEndcapHGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  fECalEndcapLGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalEndcapLGLayers", this);
+  fECalEndcapLGLayersCmd->SetGuidance("Set number of LG layers in ECal end cap");
+  fECalEndcapLGLayersCmd->SetParameterName("Layers", false);
+  fECalEndcapLGLayersCmd->SetRange("Layers>0");
+  fECalEndcapLGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // MuID commands
   fMuIDAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/MuIDAbsorberThickness", this);
@@ -168,9 +207,15 @@ DetectorMessenger::~DetectorMessenger()
   delete fGeometryCmd;
   delete fTPCRadiusCmd;
   delete fTPCLengthCmd;
-  delete fECalAbsorberThicknessCmd;
-  delete fECalScintillatorThicknessCmd;
-  delete fECalLayersCmd;
+  delete fECalHGAbsorberThicknessCmd;
+  delete fECalHGScintillatorThicknessCmd;
+  delete fECalHGBoardThicknessCmd;
+  delete fECalLGAbsorberThicknessCmd;
+  delete fECalLGScintillatorThicknessCmd;
+  delete fECalBarrelHGLayersCmd;
+  delete fECalBarrelLGLayersCmd;
+  delete fECalEndcapHGLayersCmd;
+  delete fECalEndcapLGLayersCmd;
   delete fMuIDAbsorberThicknessCmd;
   delete fMuIDScintillatorThicknessCmd;
   delete fMuIDLayersCmd;
@@ -200,14 +245,32 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   else if (command == fTPCLengthCmd) {
     fDetector->SetTPCLength(fTPCLengthCmd->GetNewDoubleValue(newValue));
   }
-  else if (command == fECalAbsorberThicknessCmd) {
-    fDetector->SetECalAbsorberThickness(fECalAbsorberThicknessCmd->GetNewDoubleValue(newValue));
+  else if (command == fECalHGAbsorberThicknessCmd) {
+    fDetector->SetECalHGAbsorberThickness(fECalHGAbsorberThicknessCmd->GetNewDoubleValue(newValue));
   }
-  else if (command == fECalScintillatorThicknessCmd) {
-    fDetector->SetECalScintillatorThickness(fECalScintillatorThicknessCmd->GetNewDoubleValue(newValue));
+  else if (command == fECalHGScintillatorThicknessCmd) {
+    fDetector->SetECalHGScintillatorThickness(fECalHGScintillatorThicknessCmd->GetNewDoubleValue(newValue));
   }
-  else if (command == fECalLayersCmd) {
-    fDetector->SetECalLayers(fECalLayersCmd->GetNewIntValue(newValue));
+  else if (command == fECalHGBoardThicknessCmd) {
+    fDetector->SetECalHGBoardThickness(fECalHGBoardThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fECalLGAbsorberThicknessCmd) {
+    fDetector->SetECalLGAbsorberThickness(fECalLGAbsorberThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fECalLGScintillatorThicknessCmd) {
+    fDetector->SetECalLGScintillatorThickness(fECalLGScintillatorThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fECalBarrelHGLayersCmd) {
+    fDetector->SetECalBarrelHGLayers(fECalBarrelHGLayersCmd->GetNewIntValue(newValue));
+  }
+  else if (command == fECalBarrelLGLayersCmd) {
+    fDetector->SetECalBarrelLGLayers(fECalBarrelLGLayersCmd->GetNewIntValue(newValue));
+  }
+  else if (command == fECalEndcapHGLayersCmd) {
+    fDetector->SetECalEndcapHGLayers(fECalEndcapHGLayersCmd->GetNewIntValue(newValue));
+  }
+  else if (command == fECalEndcapLGLayersCmd) {
+    fDetector->SetECalEndcapLGLayers(fECalEndcapLGLayersCmd->GetNewIntValue(newValue));
   }
   else if (command == fMuIDAbsorberThicknessCmd) {
     fDetector->SetMuIDAbsorberThickness(fMuIDAbsorberThicknessCmd->GetNewDoubleValue(newValue));
