@@ -30,6 +30,7 @@
 /run/OutputFileName test
 
 # Initialize the kernel
+/run/numberOfThreads 1
 /run/initialize
 
 /analysis/EnergyCut 0.001 MeV
