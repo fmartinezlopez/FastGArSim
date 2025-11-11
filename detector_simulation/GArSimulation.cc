@@ -10,6 +10,7 @@
 #include "G4UIExecutive.hh"
 #include "Randomize.hh"
 #include "G4PhysListFactory.hh"
+#include "G4GDMLParser.hh"
 
 #include "TROOT.h"
 #include "TSystem.h"
@@ -25,6 +26,7 @@ void PrintUsage()
            << " -m MACRO     Execute macro_file with UI session\n"
            << " -u UISESSION Launch specific UI session (e.g., Qt, Xm, tcsh)\n"
            << " -v           Enable visualization\n"
+           << " -g           Save current geometry as GDML file\n"
            << " -h           Print this help message\n"
            << G4endl;
 }
@@ -35,6 +37,7 @@ int main(int argc, char** argv)
     G4String macro;
     G4String session;
     G4bool visualization = false;
+    G4bool geometry = false;
     
     for (G4int i = 1; i < argc; i++)
     {
@@ -50,6 +53,10 @@ int main(int argc, char** argv)
         else if (arg == "-v")
         {
             visualization = true;
+        }
+        else if (arg == "-g")
+        {
+            geometry = true;
         }
         else if (arg == "-h")
         {
@@ -123,6 +130,15 @@ int main(int argc, char** argv)
         delete ui;
     }
     
+    // Export to GDML after initialization
+    if (geometry)
+    {
+        G4GDMLParser parser;
+        const G4String filename = "GArGeometry.gdml";
+        std::remove(filename.c_str());  // delete if exists
+        parser.Write(filename, detConstruction->GetWorldVolume());
+    }
+
     // Cleanup
     if (visManager) delete visManager;
     delete runManager;
