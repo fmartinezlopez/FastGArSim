@@ -167,17 +167,17 @@ void AnalysisManager::AddTPCHit(const G4Track* track, const G4ThreeVector& pos, 
 }
 
 // Add an ECal hit to a particle
-void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep)
+void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddECalHit(::ECalHit(pos, time, edep));
+  particle->AddECalHit(::ECalHit(pos, time, edep, layer, detID));
 }
 
 // Add a MuID hit to a particle
-void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep)
+void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddMuIDHit(::MuIDHit(pos, time, edep));
+  particle->AddMuIDHit(::MuIDHit(pos, time, edep, layer, detID));
 }
 
 // Update eventID if reading external file(s)
@@ -196,6 +196,9 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   // Get volume information
   G4VPhysicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
   if (!volume) return;
+
+  // Get copy number -- relevant for calorimeters
+  G4int copyNo = step->GetPreStepPoint()->GetTouchableHandle()->GetCopyNumber();
   
   // Get track and position information
   G4Track* track = step->GetTrack();
@@ -203,20 +206,34 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   G4double time = track->GetGlobalTime();
   G4double stepSize = step->GetStepLength();
   
-  // Check volume type and record appropriate hit
+  // Check volume name
   G4String volumeName = volume->GetName();
+
+  // Detector ID -- relevant for calorimeters
+  // 1: left endcap, 2: barrel, 3: right endcap
+  G4int detID = 0;
+  if (volumeName.find("endcap") != std::string::npos) {
+    if (position.z() < 0.0) {
+      detID = 1;
+    } else {
+      detID = 3;
+    }
+  } else if (volumeName.find("barrel") != std::string::npos) {
+    detID = 2;
+  }
   
+  // Record hit based on volume
   if (volumeName.find("TPC") != std::string::npos) {
     // This is a TPC hit
     AddTPCHit(track, position, edep, stepSize);
   }
   else if (volumeName.find("ECal") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is an ECal hit
-    AddECalHit(track, position, time, edep);
+    AddECalHit(track, position, time, edep, copyNo, detID);
   }
   else if (volumeName.find("MuID") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is a MuID hit
-    AddMuIDHit(track, position, time, edep);
+    AddMuIDHit(track, position, time, edep, copyNo, detID);
   }
 }
 
