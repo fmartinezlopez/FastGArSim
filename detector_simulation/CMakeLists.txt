@@ -54,7 +54,7 @@ target_link_libraries(GArSimulation ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
-# build TPCSimulation. This is so that we can run the executable directly because it
+# build GArSimulation. This is so that we can run the executable directly because it
 # relies on these scripts being in the current working directory.
 set(SCRIPTS
   macros/init.mac
@@ -74,11 +74,21 @@ foreach(_script ${SCRIPTS})
     )
 endforeach()
 
-configure_file(
-  ${PROJECT_SOURCE_DIR}/utils/EventToNtupleConverter.C   # source location
-  ${PROJECT_BINARY_DIR}/EventToNtupleConverter.C   # destination in build tree
-  COPYONLY                                          # just copy, don’t process
-)
+#----------------------------------------------------------------------------
+# Copy also all macros to the build directory
+set(MACROS
+  utils/EventToNtupleConverter.C
+  utils/GeoVis.C
+  )
+
+foreach(_macro ${MACROS})
+  get_filename_component(_name ${_macro} NAME)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/${_macro}
+    ${PROJECT_BINARY_DIR}/${_name}
+    COPYONLY
+    )
+endforeach()
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
