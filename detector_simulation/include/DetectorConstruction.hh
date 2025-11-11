@@ -39,6 +39,7 @@ public:
     
     // Messenger methods for configurable parameters
     void SetGeometryType(G4String type);
+    void SetMagneticFieldStrength(G4double radius);
     void SetTPCRadius(G4double radius);
     void SetTPCLength(G4double length);
     void SetECalHGAbsorberThickness(G4double thickness);

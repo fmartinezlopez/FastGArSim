@@ -812,6 +812,16 @@ void DetectorConstruction::SetGeometryType(G4String type)
     }
 }
 
+void DetectorConstruction::SetMagneticFieldStrength(G4double bfield)
+{
+    fMagneticFieldStrength = bfield;
+    G4cout << "Magnetic field strength set to " << fMagneticFieldStrength/tesla << " T" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
 void DetectorConstruction::SetTPCRadius(G4double radius)
 {
     fTPCRadius = radius;

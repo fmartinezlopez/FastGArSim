@@ -6,7 +6,7 @@ echo "Running on $(hostname) at ${GLIDEIN_Site}. GLIDEIN_DUNESite = ${GLIDEIN_DU
 OUTDIR=/pnfs/dune/scratch/users/jmartin4/FastGArSim
 
 # Let's rename the output file so it's unique in case we send multiple jobs
-OUTFILE=test_${CLUSTER}_${PROCESS}_$(date -u +%Y%m%d).root
+OUTFILE=photongun_B0_0_0to1GeV_downbeam_CDR_${CLUSTER}_${PROCESS}_$(date -u +%Y%m%d).root
 
 # Make sure we see what we expect
 pwd
@@ -50,7 +50,7 @@ sed "s/first_event/$first/" macros/init_base.mac > macros/init.mac
 echo "Starting processing at event $first."
 
 # Run detector simulation
-./GArSimulation -m macros/nu.mac
+./GArSimulation -m macros/gun.mac
 
 G4_RESULT=$?
 if [ $G4_RESULT -ne 0 ]; then
@@ -60,7 +60,7 @@ fi
 
 # Run ntuple maker
 echo "Running ntuple maker"
-root -q -b 'EventToNtupleConverter.C("test.root", "out.root")'
+root -q -b 'EventToNtupleConverter.C("gun_output.root", "out.root")'
 
 NTUPLE_RESULT=$?
 if [ $NTUPLE_RESULT -ne 0 ]; then

@@ -23,8 +23,14 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fGeometryCmd->SetParameterName("GeometryType", false);
   fGeometryCmd->SetCandidates("gar lar");
   fGeometryCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-  
+
   // TPC commands
+  fMagneticFieldStrengthCmd = new G4UIcmdWithADoubleAndUnit("/detector/BField", this);
+  fMagneticFieldStrengthCmd->SetGuidance("Set magnetic field strength");
+  fMagneticFieldStrengthCmd->SetParameterName("BField", false);
+  fMagneticFieldStrengthCmd->SetUnitCandidates("T tesla G gauss");
+  fMagneticFieldStrengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
   fTPCRadiusCmd = new G4UIcmdWithADoubleAndUnit("/detector/TPCRadius", this);
   fTPCRadiusCmd->SetGuidance("Set TPC radius");
   fTPCRadiusCmd->SetParameterName("Radius", false);

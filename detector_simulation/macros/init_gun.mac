@@ -12,14 +12,20 @@
 /physics/cutValue 1.0 mm
 
 # Initialize detector
+/detector/BField 0. tesla
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
+/detector/ECalBarrelHGLayers 8 
+/detector/ECalBarrelLGLayers 34 
+/detector/ECalEndcapHGLayers 6 
+/detector/ECalEndcapLGLayers 36 
+/detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 
 # Initialize random number generator
-/random/setSeeds 123456 654321
+# /random/setSeeds 123456 654321
 
-/run/OutputFileName gun
+/run/OutputFileName gun_output
 
 # Initialize the kernel
 /run/initialize
