@@ -75,7 +75,7 @@ foreach(_script ${SCRIPTS})
 endforeach()
 
 configure_file(
-  ${PROJECT_SOURCE_DIR}/EventToNtupleConverter.C   # source location
+  ${PROJECT_SOURCE_DIR}/utils/EventToNtupleConverter.C   # source location
   ${PROJECT_BINARY_DIR}/EventToNtupleConverter.C   # destination in build tree
   COPYONLY                                          # just copy, don’t process
 )
