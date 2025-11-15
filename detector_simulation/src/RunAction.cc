@@ -1,4 +1,5 @@
 #include "RunAction.hh"
+#include "DetectorConstruction.hh"
 #include "AnalysisManager.hh"
 
 #include "G4Run.hh"
@@ -6,9 +7,10 @@
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
 
-RunAction::RunAction()
+RunAction::RunAction(DetectorConstruction* detector)
 : G4UserRunAction(),
   fSaveOutput(true), fOutputFileName("gar_simulation"),
+  fDetectorConstruction(detector),
   fAnalysisManager(nullptr)
 {
 
@@ -45,6 +47,11 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     // Initialize analysis
     if (fSaveOutput) {
         fAnalysisManager->Book();
+
+        // Record geometry AFTER Book() is called
+        if (fDetectorConstruction) {
+            fDetectorConstruction->RecordGeometry();
+        }
     }
 
 }

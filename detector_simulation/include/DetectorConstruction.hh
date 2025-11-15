@@ -30,6 +30,7 @@ public:
     virtual void ConstructSDandField();
 
     G4bool UpdateGeometry();
+    void RecordGeometry();
     
     // Getter methods
     G4VPhysicalVolume* GetWorldVolume() const { return fWorldPhysical; }

@@ -16,6 +16,52 @@
 #include "TFile.h"
 #include "TTree.h"
 
+// Geometry info structure
+struct GeometryInfo {
+  // Geometry type
+  Int_t geometry_type;  // 0 = GArLike, 1 = LArLike
+  
+  // GAr TPC parameters
+  Double_t gar_tpc_radius;
+  Double_t gar_tpc_length;
+  Double_t gar_magnetic_field;
+  Double_t gar_pressure;
+  
+  // ECal parameters
+  Double_t ecal_barrel_gap;
+  Double_t ecal_endcap_gap;
+  Int_t ecal_num_sides;
+  Double_t ecal_hg_absorber_thickness;
+  Double_t ecal_hg_scintillator_thickness;
+  Double_t ecal_hg_board_thickness;
+  Int_t ecal_barrel_hg_layers;
+  Int_t ecal_endcap_hg_layers;
+  Double_t ecal_lg_absorber_thickness;
+  Double_t ecal_lg_scintillator_thickness;
+  Int_t ecal_barrel_lg_layers;
+  Int_t ecal_endcap_lg_layers;
+  
+  // MuID parameters
+  Double_t muid_barrel_gap;
+  Double_t muid_absorber_thickness;
+  Double_t muid_scintillator_thickness;
+  Int_t muid_num_sides;
+  Int_t muid_layers;
+  
+  // LAr TPC parameters
+  Int_t lar_n_modules_x;
+  Int_t lar_n_modules_y;
+  Int_t lar_n_modules_z;
+  Double_t lar_module_length;
+  Double_t lar_module_width;
+  Double_t lar_module_depth;
+  Double_t lar_module_gap;
+  Double_t lar_insulation_thickness;
+  Double_t lar_cryostat_thickness;
+  Bool_t lar_enable_muon_window;
+  Double_t lar_muon_window_thickness;
+};
+
 class AnalysisManager
 {
 public:
@@ -24,8 +70,12 @@ public:
   
   // Initialization methods for the beginning and end of run
   void Book();
+  void BookGeometry();
   void Save();
   void Close();
+
+  // Fill Geometry TTree
+  void FillGeometryInfo(const GeometryInfo& geoInfo);
 
   // Method to update eventID when reading external input file(s)
   void UpdateEventID(const G4int id);
@@ -72,6 +122,8 @@ private:
   TFile* fRootFile;
   TTree* fEventTree;
   root::Event* fStoredEvent;  // ROOT Event object that will be stored in the tree
+  TTree* fGeometryTree;
+  GeometryInfo fGeometryInfo;
   
   // Configuration parameters
   G4bool fWriteTrajectory;

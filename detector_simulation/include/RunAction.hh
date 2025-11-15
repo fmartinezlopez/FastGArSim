@@ -7,12 +7,13 @@
 #include <map>
 
 class G4Run;
+class DetectorConstruction;
 class AnalysisManager;
 
 class RunAction : public G4UserRunAction
 {
 public:
-    RunAction();
+    RunAction(DetectorConstruction* detector);
     virtual ~RunAction();
     
     // Methods from base class
@@ -35,6 +36,9 @@ private:
     G4bool fSaveOutput;
     G4String fOutputFileName;
     
+    // Detector construction
+    DetectorConstruction* fDetectorConstruction;
+
     // Analysis manager
     AnalysisManager* fAnalysisManager;
 

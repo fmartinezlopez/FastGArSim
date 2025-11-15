@@ -71,15 +71,77 @@ void AnalysisManager::Book()
   G4cout << "AnalysisManager: Created ROOT file " << filename << G4endl;
 }
 
+void AnalysisManager::BookGeometry()
+{
+  if (!fRootFile) {
+    G4cerr << "Error: ROOT file not open. Call Book() first." << G4endl;
+    return;
+  }
+  
+  fGeometryTree = new TTree("Geometry", "Detector Geometry Parameters");
+  
+  // Geometry type
+  fGeometryTree->Branch("geometry_type", &fGeometryInfo.geometry_type);
+  
+  // GAr TPC parameters
+  fGeometryTree->Branch("gar_tpc_radius", &fGeometryInfo.gar_tpc_radius);
+  fGeometryTree->Branch("gar_tpc_length", &fGeometryInfo.gar_tpc_length);
+  fGeometryTree->Branch("gar_magnetic_field", &fGeometryInfo.gar_magnetic_field);
+  fGeometryTree->Branch("gar_pressure", &fGeometryInfo.gar_pressure);
+  
+  // ECal parameters
+  fGeometryTree->Branch("ecal_barrel_gap", &fGeometryInfo.ecal_barrel_gap);
+  fGeometryTree->Branch("ecal_endcap_gap", &fGeometryInfo.ecal_endcap_gap);
+  fGeometryTree->Branch("ecal_num_sides", &fGeometryInfo.ecal_num_sides);
+  fGeometryTree->Branch("ecal_hg_absorber_thickness", &fGeometryInfo.ecal_hg_absorber_thickness);
+  fGeometryTree->Branch("ecal_hg_scintillator_thickness", &fGeometryInfo.ecal_hg_scintillator_thickness);
+  fGeometryTree->Branch("ecal_hg_board_thickness", &fGeometryInfo.ecal_hg_board_thickness);
+  fGeometryTree->Branch("ecal_barrel_hg_layers", &fGeometryInfo.ecal_barrel_hg_layers);
+  fGeometryTree->Branch("ecal_endcap_hg_layers", &fGeometryInfo.ecal_endcap_hg_layers);
+  fGeometryTree->Branch("ecal_lg_absorber_thickness", &fGeometryInfo.ecal_lg_absorber_thickness);
+  fGeometryTree->Branch("ecal_lg_scintillator_thickness", &fGeometryInfo.ecal_lg_scintillator_thickness);
+  fGeometryTree->Branch("ecal_barrel_lg_layers", &fGeometryInfo.ecal_barrel_lg_layers);
+  fGeometryTree->Branch("ecal_endcap_lg_layers", &fGeometryInfo.ecal_endcap_lg_layers);
+  
+  // MuID parameters
+  fGeometryTree->Branch("muid_barrel_gap", &fGeometryInfo.muid_barrel_gap);
+  fGeometryTree->Branch("muid_absorber_thickness", &fGeometryInfo.muid_absorber_thickness);
+  fGeometryTree->Branch("muid_scintillator_thickness", &fGeometryInfo.muid_scintillator_thickness);
+  fGeometryTree->Branch("muid_num_sides", &fGeometryInfo.muid_num_sides);
+  fGeometryTree->Branch("muid_layers", &fGeometryInfo.muid_layers);
+  
+  // LAr TPC parameters
+  fGeometryTree->Branch("lar_n_modules_x", &fGeometryInfo.lar_n_modules_x);
+  fGeometryTree->Branch("lar_n_modules_y", &fGeometryInfo.lar_n_modules_y);
+  fGeometryTree->Branch("lar_n_modules_z", &fGeometryInfo.lar_n_modules_z);
+  fGeometryTree->Branch("lar_module_length", &fGeometryInfo.lar_module_length);
+  fGeometryTree->Branch("lar_module_width", &fGeometryInfo.lar_module_width);
+  fGeometryTree->Branch("lar_module_depth", &fGeometryInfo.lar_module_depth);
+  fGeometryTree->Branch("lar_module_gap", &fGeometryInfo.lar_module_gap);
+  fGeometryTree->Branch("lar_insulation_thickness", &fGeometryInfo.lar_insulation_thickness);
+  fGeometryTree->Branch("lar_cryostat_thickness", &fGeometryInfo.lar_cryostat_thickness);
+  fGeometryTree->Branch("lar_enable_muon_window", &fGeometryInfo.lar_enable_muon_window);
+  fGeometryTree->Branch("lar_muon_window_thickness", &fGeometryInfo.lar_muon_window_thickness);
+  
+  G4cout << "AnalysisManager: Created Geometry tree" << G4endl;
+}
 
 // Save data - call at the end of the run
 void AnalysisManager::Save()
 {
-  if (fRootFile && fEventTree) {
+  if (fRootFile) {
     fRootFile->cd();
-    fEventTree->Write();
-    G4cout << "AnalysisManager: Saved " << fEventTree->GetEntries() 
-           << " events to ROOT file" << G4endl;
+    
+    if (fEventTree) {
+      fEventTree->Write();
+      G4cout << "AnalysisManager: Saved " << fEventTree->GetEntries() 
+             << " events to ROOT file" << G4endl;
+    }
+    
+    if (fGeometryTree) {
+      fGeometryTree->Write();
+      G4cout << "AnalysisManager: Saved geometry tree" << G4endl;
+    }
   }
 }
 
@@ -91,6 +153,15 @@ void AnalysisManager::Close()
     delete fRootFile;
     fRootFile = nullptr;
     G4cout << "AnalysisManager: Closed ROOT file" << G4endl;
+  }
+}
+
+void AnalysisManager::FillGeometryInfo(const GeometryInfo& geoInfo)
+{
+  fGeometryInfo = geoInfo;
+  if (fGeometryTree) {
+    fGeometryTree->Fill();
+    G4cout << "AnalysisManager: Filled geometry information" << G4endl;
   }
 }
 
