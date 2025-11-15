@@ -624,8 +624,8 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
             
             // Place scintillator layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex, true);
-            
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex + numHGLayers, true);
+
             // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
             if (layerIndex == 0) {
                 *outScintillatorVolume = scintillatorLogical;
@@ -763,7 +763,7 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
         scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
         
         // Place scintillator layer
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_LG_Scintillator_phys", endcapLogical, false, layerIndex, true);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_LG_Scintillator_phys", endcapLogical, false, layerIndex + numHGLayers, true);
         
         layerPosition += (layerLGThickness - layerLGAbsorberThickness);
 
