@@ -26,6 +26,7 @@ private:
     TFile* outputFile;
     TTree* inputTree;
     TTree* outputTree;
+    TTree* geometryTree;
     Event* event;
     
     // Variables for analysis ntuple
@@ -73,7 +74,8 @@ private:
     
 public:
     EventConverter() : inputFile(nullptr), outputFile(nullptr), 
-                               inputTree(nullptr), outputTree(nullptr), 
+                               inputTree(nullptr), outputTree(nullptr),
+                               geometryTree(nullptr),
                                event(nullptr) {}
     
     ~EventConverter() {
@@ -99,6 +101,14 @@ public:
         if (!inputTree) {
             std::cerr << "Error: Cannot find tree " << treeName << " in input file" << std::endl;
             return kFALSE;
+        }
+
+        // Try to get Geometry tree (optional - won't fail if it doesn't exist)
+        geometryTree = dynamic_cast<TTree*>(inputFile->Get("Geometry"));
+        if (geometryTree) {
+            std::cout << "Found Geometry tree!" << std::endl;
+        } else {
+            std::cout << "Warning: No Geometry tree found in input file" << std::endl;
         }
         
         // Create Event object and set branch address
@@ -390,8 +400,19 @@ public:
     void Finalize() {
         if (outputFile && outputFile->IsOpen()) {
             outputFile->cd();
+
+            // Write the analysis tree
             outputTree->OptimizeBaskets();
             outputTree->Write();
+
+            // Clone the geometry tree if it exists
+            if (geometryTree) {
+                std::cout << "Copying Geometry tree to output file..." << std::endl;
+                TTree* geometryClone = geometryTree->CloneTree();
+                geometryClone->SetName("GeoTree");
+                geometryClone->Write();
+                std::cout << "Geometry tree copied successfully" << std::endl;
+            }
             
             // Print summary
             std::cout << "\n=== Summary ===" << std::endl;
