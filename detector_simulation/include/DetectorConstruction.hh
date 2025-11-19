@@ -30,6 +30,7 @@ public:
     virtual void ConstructSDandField();
 
     G4bool UpdateGeometry();
+    void RecordGeometry();
     
     // Getter methods
     G4VPhysicalVolume* GetWorldVolume() const { return fWorldPhysical; }
@@ -39,7 +40,7 @@ public:
     
     // Messenger methods for configurable parameters
     void SetGeometryType(G4String type);
-    void SetMagneticFieldStrength(G4double radius);
+    void SetMagneticFieldStrength(G4double bfield);
     void SetTPCRadius(G4double radius);
     void SetTPCLength(G4double length);
     void SetECalHGAbsorberThickness(G4double thickness);

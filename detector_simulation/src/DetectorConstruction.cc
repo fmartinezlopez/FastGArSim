@@ -1,5 +1,6 @@
 #include "DetectorConstruction.hh"
 #include "DetectorMessenger.hh"
+#include "AnalysisManager.hh"
 
 #include "G4Box.hh"
 #include "G4Tubs.hh"
@@ -189,6 +190,63 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     }
 
     return fWorldPhysical;
+}
+
+// Add Geometry information to output file
+void DetectorConstruction::RecordGeometry()
+{
+    auto analysisManager = AnalysisManager::GetInstance();
+
+    // Book geometry tree
+    analysisManager->BookGeometry();
+
+    // Fill geometry parameters
+    GeometryInfo geoInfo;
+
+    // Set geometry type
+    geoInfo.geometry_type = static_cast<int>(fGeometryType);
+
+    // GAr TPC parameters
+    geoInfo.gar_tpc_radius = fTPCRadius/cm;
+    geoInfo.gar_tpc_length = fTPCLength/cm;
+    geoInfo.gar_magnetic_field = fMagneticFieldStrength/tesla;
+    geoInfo.gar_pressure = fPressure/bar;
+
+    // ECal parameters
+    geoInfo.ecal_barrel_gap = fECalBarrelGap/cm;
+    geoInfo.ecal_endcap_gap = fECalEndcapGap/cm;
+    geoInfo.ecal_num_sides = fECalNumSides;
+    geoInfo.ecal_hg_absorber_thickness = fECalHGAbsorberThickness/cm;
+    geoInfo.ecal_hg_scintillator_thickness = fECalHGScintillatorThickness/cm;
+    geoInfo.ecal_hg_board_thickness = fECalHGBoardThickness/cm;
+    geoInfo.ecal_barrel_hg_layers = fECalBarrelHGLayers;
+    geoInfo.ecal_endcap_hg_layers = fECalEndcapHGLayers;
+    geoInfo.ecal_lg_absorber_thickness = fECalLGAbsorberThickness/cm;
+    geoInfo.ecal_lg_scintillator_thickness = fECalLGScintillatorThickness/cm;
+    geoInfo.ecal_barrel_lg_layers = fECalBarrelLGLayers;
+    geoInfo.ecal_endcap_lg_layers = fECalEndcapLGLayers;
+
+    // MuID parameters
+    geoInfo.muid_barrel_gap = fMuIDBarrelGap/cm;
+    geoInfo.muid_absorber_thickness = fMuIDAbsorberThickness/cm;
+    geoInfo.muid_scintillator_thickness = fMuIDScintillatorThickness/cm;
+    geoInfo.muid_num_sides = fMuIDNumSides;
+    geoInfo.muid_layers = fMuIDLayers;
+
+    // LAr TPC parameters
+    geoInfo.lar_n_modules_x = fLArNModulesX;
+    geoInfo.lar_n_modules_y = fLArNModulesY;
+    geoInfo.lar_n_modules_z = fLArNModulesZ;
+    geoInfo.lar_module_length = fLArModuleLength/cm;
+    geoInfo.lar_module_width = fLArModuleWidth/cm;
+    geoInfo.lar_module_depth = fLArModuleDepth/cm;
+    geoInfo.lar_module_gap = fLArModuleGap/cm;
+    geoInfo.lar_insulation_thickness = fLArInsulationThickness/cm;
+    geoInfo.lar_cryostat_thickness = fLArCryostatThickness/cm;
+    geoInfo.lar_enable_muon_window = fLArEnableMuonWindow;
+    geoInfo.lar_muon_window_thickness = fLArMuonWindowThickness/cm;
+
+    analysisManager->FillGeometryInfo(geoInfo);
 }
 
 void DetectorConstruction::ConstructGArDetector()
@@ -624,8 +682,8 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
             
             // Place scintillator layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex, true);
-            
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex + numHGLayers, true);
+
             // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
             if (layerIndex == 0) {
                 *outScintillatorVolume = scintillatorLogical;
@@ -763,7 +821,7 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
         scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
         
         // Place scintillator layer
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_LG_Scintillator_phys", endcapLogical, false, layerIndex, true);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerScintillatorZ), scintillatorLogical, baseName+"_endcap_LG_Scintillator_phys", endcapLogical, false, layerIndex + numHGLayers, true);
         
         layerPosition += (layerLGThickness - layerLGAbsorberThickness);
 

@@ -26,6 +26,7 @@ private:
     TFile* outputFile;
     TTree* inputTree;
     TTree* outputTree;
+    TTree* geometryTree;
     Event* event;
     
     // Variables for analysis ntuple
@@ -59,6 +60,8 @@ private:
     std::vector<Float_t> ecalHitX, ecalHitY, ecalHitZ;
     std::vector<Float_t> ecalHitTime;
     std::vector<Float_t> ecalHitEdep;
+    std::vector<Int_t> ecalHitLayer;
+    std::vector<Int_t> ecalHitDetID;
 
     // MuID hits (both primary and secondary)
     std::vector<Int_t> muidHitTrackID;
@@ -66,10 +69,13 @@ private:
     std::vector<Float_t> muidHitX, muidHitY, muidHitZ;
     std::vector<Float_t> muidHitTime;
     std::vector<Float_t> muidHitEdep;
+    std::vector<Int_t> muidHitLayer;
+    std::vector<Int_t> muidHitDetID;
     
 public:
     EventConverter() : inputFile(nullptr), outputFile(nullptr), 
-                               inputTree(nullptr), outputTree(nullptr), 
+                               inputTree(nullptr), outputTree(nullptr),
+                               geometryTree(nullptr),
                                event(nullptr) {}
     
     ~EventConverter() {
@@ -95,6 +101,14 @@ public:
         if (!inputTree) {
             std::cerr << "Error: Cannot find tree " << treeName << " in input file" << std::endl;
             return kFALSE;
+        }
+
+        // Try to get Geometry tree (optional - won't fail if it doesn't exist)
+        geometryTree = dynamic_cast<TTree*>(inputFile->Get("Geometry"));
+        if (geometryTree) {
+            std::cout << "Found Geometry tree!" << std::endl;
+        } else {
+            std::cout << "Warning: No Geometry tree found in input file" << std::endl;
         }
         
         // Create Event object and set branch address
@@ -154,6 +168,8 @@ public:
         outputTree->Branch("ecalHitZ", &ecalHitZ);
         outputTree->Branch("ecalHitTime", &ecalHitTime);
         outputTree->Branch("ecalHitEdep", &ecalHitEdep);
+        outputTree->Branch("ecalHitLayer", &ecalHitLayer);
+        outputTree->Branch("ecalHitDetID", &ecalHitDetID);
 
         // MuID hits
         outputTree->Branch("muidHitTrackID", &muidHitTrackID);
@@ -163,6 +179,8 @@ public:
         outputTree->Branch("muidHitZ", &muidHitZ);
         outputTree->Branch("muidHitTime", &muidHitTime);
         outputTree->Branch("muidHitEdep", &muidHitEdep);
+        outputTree->Branch("muidHitLayer", &muidHitLayer);
+        outputTree->Branch("muidHitDetID", &muidHitDetID);
         
         return kTRUE;
     }
@@ -191,12 +209,16 @@ public:
         ecalHitX.clear(); ecalHitY.clear(); ecalHitZ.clear();
         ecalHitTime.clear();
         ecalHitEdep.clear();
+        ecalHitLayer.clear();
+        ecalHitDetID.clear();
 
         muidHitTrackID.clear();
         muidHitIsSec.clear();
         muidHitX.clear(); muidHitY.clear(); muidHitZ.clear();
         muidHitTime.clear();
         muidHitEdep.clear();
+        muidHitLayer.clear();
+        muidHitDetID.clear();
 
     }
     
@@ -320,6 +342,8 @@ public:
                     ecalHitZ.push_back(hit.z);
                     ecalHitTime.push_back(hit.time);
                     ecalHitEdep.push_back(hit.energyDeposit);
+                    ecalHitLayer.push_back(hit.layer);
+                    ecalHitDetID.push_back(hit.detID);
                 }
 
                 // Process secondary ECal hits
@@ -332,6 +356,8 @@ public:
                     ecalHitZ.push_back(hit.z);
                     ecalHitTime.push_back(hit.time);
                     ecalHitEdep.push_back(hit.energyDeposit);
+                    ecalHitLayer.push_back(hit.layer);
+                    ecalHitDetID.push_back(hit.detID);
                 }
 
                 // Process MuID hits
@@ -344,6 +370,8 @@ public:
                     muidHitZ.push_back(hit.z);
                     muidHitTime.push_back(hit.time);
                     muidHitEdep.push_back(hit.energyDeposit);
+                    muidHitLayer.push_back(hit.layer);
+                    muidHitDetID.push_back(hit.detID);
                 }
 
                 // Process secondary MuID hits
@@ -356,6 +384,8 @@ public:
                     muidHitZ.push_back(hit.z);
                     muidHitTime.push_back(hit.time);
                     muidHitEdep.push_back(hit.energyDeposit);
+                    muidHitLayer.push_back(hit.layer);
+                    muidHitDetID.push_back(hit.detID);
                 }
 
             }
@@ -370,8 +400,19 @@ public:
     void Finalize() {
         if (outputFile && outputFile->IsOpen()) {
             outputFile->cd();
+
+            // Write the analysis tree
             outputTree->OptimizeBaskets();
             outputTree->Write();
+
+            // Clone the geometry tree if it exists
+            if (geometryTree) {
+                std::cout << "Copying Geometry tree to output file..." << std::endl;
+                TTree* geometryClone = geometryTree->CloneTree();
+                geometryClone->SetName("GeoTree");
+                geometryClone->Write();
+                std::cout << "Geometry tree copied successfully" << std::endl;
+            }
             
             // Print summary
             std::cout << "\n=== Summary ===" << std::endl;

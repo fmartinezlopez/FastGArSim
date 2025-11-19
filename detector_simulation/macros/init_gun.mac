@@ -25,9 +25,10 @@
 # Initialize random number generator
 # /random/setSeeds 123456 654321
 
-/run/OutputFileName gun_output
+/run/OutputFileName gun
 
 # Initialize the kernel
+/run/numberOfThreads 1
 /run/initialize
 
 /analysis/EnergyCut 0.001 MeV

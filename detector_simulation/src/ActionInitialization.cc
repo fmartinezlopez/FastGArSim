@@ -1,4 +1,5 @@
 #include "ActionInitialization.hh"
+#include "DetectorConstruction.hh"
 #include "GunGeneratorAction.hh"
 #include "GENIEGeneratorAction.hh"
 #include "NuWroGeneratorAction.hh"
@@ -7,8 +8,9 @@
 #include "TrackingAction.hh"
 #include "SteppingAction.hh"
 
-ActionInitialization::ActionInitialization()
+ActionInitialization::ActionInitialization(DetectorConstruction* detector)
 : G4VUserActionInitialization(),
+  fDetectorConstruction(detector),
   fGeneratorType("particle"),
   fGenieFileName(""),
   fNuWroFileName(""),
@@ -25,7 +27,7 @@ ActionInitialization::~ActionInitialization()
 void ActionInitialization::BuildForMaster() const
 {
     // Create and register run action for master thread
-    RunAction* runAction = new RunAction();
+    RunAction* runAction = new RunAction(fDetectorConstruction);
     SetUserAction(runAction);
 }
 
@@ -65,7 +67,7 @@ void ActionInitialization::Build() const
     SetUserAction(primaryGeneratorAction);
     
     // Create and register run action
-    RunAction* runAction = new RunAction();
+    RunAction* runAction = new RunAction(fDetectorConstruction);
     SetUserAction(runAction);
     
     // Create and register event action
