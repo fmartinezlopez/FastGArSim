@@ -68,14 +68,15 @@ namespace root {
     class ECalHit : public TObject
     {
         public:
-        ECalHit() : x(0), y(0), z(0), time(0), energyDeposit(0), layer(0), detID(0) {}
+        ECalHit() : x(0), y(0), z(0), time(0), energyDeposit(0), segment(0), layer(0), detID(0) {}
         
-        ECalHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep, Int_t l, Int_t id) 
-            : x(px), y(py), z(pz), time(t), energyDeposit(edep), layer(l), detID(id) {}
+        ECalHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep, Int_t s, Int_t l, Int_t id) 
+            : x(px), y(py), z(pz), time(t), energyDeposit(edep), segment(s), layer(l), detID(id) {}
         
         Double_t x, y, z;
         Double_t time;
         Double_t energyDeposit;
+        Int_t segment;
         Int_t layer;
         Int_t detID;
 
@@ -85,14 +86,15 @@ namespace root {
     class MuIDHit : public TObject
     {
         public:
-        MuIDHit() : x(0), y(0), z(0), time(0), energyDeposit(0), layer(0), detID(0) {}
+        MuIDHit() : x(0), y(0), z(0), time(0), energyDeposit(0), segment(0), layer(0), detID(0) {}
         
-        MuIDHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep, Int_t l, Int_t id) 
-            : x(px), y(py), z(pz), time(t), energyDeposit(edep), layer(l), detID(id) {}
+        MuIDHit(Double_t px, Double_t py, Double_t pz, Double_t t, Double_t edep, Int_t s, Int_t l, Int_t id) 
+            : x(px), y(py), z(pz), time(t), energyDeposit(edep), segment(s), layer(l), detID(id) {}
         
         Double_t x, y, z;
         Double_t time;
         Double_t energyDeposit;
+        Int_t segment;
         Int_t layer;
         Int_t detID;
 

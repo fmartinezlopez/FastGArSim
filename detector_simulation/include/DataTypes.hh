@@ -120,14 +120,15 @@ private:
 class ECalHit
 {
 public:
-  ECalHit(const G4ThreeVector& pos, G4double t, G4double edep, G4int l, G4int id) 
-    : position(pos), time(t), energyDeposit(edep), layer(l), detID(id) {}
+  ECalHit(const G4ThreeVector& pos, G4double t, G4double edep, G4int s, G4int l, G4int id) 
+    : position(pos), time(t), energyDeposit(edep), segment(s), layer(l), detID(id) {}
   
   // Copy constructor
   ECalHit(const ECalHit& other)
     : position(other.position),
       time(other.time),
       energyDeposit(other.energyDeposit),
+      segment(other.segment),
       layer(other.layer),
       detID(other.detID)
   {}
@@ -139,6 +140,7 @@ public:
       position = other.position;
       time = other.time;
       energyDeposit = other.energyDeposit;
+      segment = other.segment;
       layer = other.layer;
       detID = other.detID;
     }
@@ -148,6 +150,7 @@ public:
   const G4ThreeVector& GetPosition() const { return position; }
   G4double GetTime() const { return time; }
   G4double GetEnergyDeposit() const { return energyDeposit; }
+  G4int GetSegment() const { return segment; }
   G4int GetLayer() const { return layer; }
   G4int GetDetectorID() const { return detID; }
   
@@ -155,6 +158,7 @@ private:
   G4ThreeVector position;
   G4double time;
   G4double energyDeposit;
+  G4int segment;
   G4int layer;
   G4int detID;
 };
@@ -162,14 +166,15 @@ private:
 class MuIDHit
 {
 public:
-  MuIDHit(const G4ThreeVector& pos, G4double t, G4double edep, G4int l, G4int id) 
-    : position(pos), time(t), energyDeposit(edep), layer(l), detID(id) {}
+  MuIDHit(const G4ThreeVector& pos, G4double t, G4double edep, G4int s, G4int l, G4int id) 
+    : position(pos), time(t), energyDeposit(edep), segment(s), layer(l), detID(id) {}
   
   // Copy constructor
   MuIDHit(const MuIDHit& other)
     : position(other.position),
       time(other.time),
       energyDeposit(other.energyDeposit),
+      segment(other.segment),
       layer(other.layer),
       detID(other.detID)
   {}
@@ -181,6 +186,7 @@ public:
       position = other.position;
       time = other.time;
       energyDeposit = other.energyDeposit;
+      segment = other.segment;
       layer = other.layer;
       detID = other.detID;
     }
@@ -190,6 +196,7 @@ public:
   const G4ThreeVector& GetPosition() const { return position; }
   G4double GetTime() const { return time; }
   G4double GetEnergyDeposit() const { return energyDeposit; }
+  G4int GetSegment() const { return segment; }
   G4int GetLayer() const { return layer; }
   G4int GetDetectorID() const { return detID; }
   
@@ -197,6 +204,7 @@ private:
   G4ThreeVector position;
   G4double time;
   G4double energyDeposit;
+  G4int segment;
   G4int layer;
   G4int detID;
 };

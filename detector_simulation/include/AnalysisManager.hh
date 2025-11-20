@@ -88,8 +88,8 @@ public:
   void BeginEvent(G4int eventID);
   void EndEvent();
   void AddTPCHit(const G4Track* track, const G4ThreeVector& pos, G4double edep, G4double step);
-  void AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID);
-  void AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID);
+  void AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int segment, G4int layer, G4int detID);
+  void AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int segment, G4int layer, G4int detID);
   Particle* GetParticle(const G4Track* track);
 
   // Setter methods
