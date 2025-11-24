@@ -3,3 +3,5 @@ detector_simulation/build/
 *.root
 *.png
 *.pdf
+*.gdml
+*.tar.gz
