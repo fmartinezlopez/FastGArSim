@@ -46,6 +46,16 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fTPCLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // ECal commands
+  fECalAbsorberMaterialCmd = new G4UIcmdWithAString("/detector/ECalAbsorberMaterial", this);
+  fECalAbsorberMaterialCmd->SetGuidance("Set ECal absorber material");
+  fECalAbsorberMaterialCmd->SetParameterName("Material", false);
+  fECalAbsorberMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+   
+  fECalScintillatorMaterialCmd = new G4UIcmdWithAString("/detector/ECalScintillatorMaterial", this);
+  fECalScintillatorMaterialCmd->SetGuidance("Set ECal scintillator material");
+  fECalScintillatorMaterialCmd->SetParameterName("Material", false);
+  fECalScintillatorMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+   
   fECalHGAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalHGAbsorberThickness", this);
   fECalHGAbsorberThicknessCmd->SetGuidance("Set ECal HG absorber thickness");
   fECalHGAbsorberThicknessCmd->SetParameterName("Thickness", false);
@@ -84,25 +94,25 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fECalBarrelHGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalBarrelHGLayers", this);
   fECalBarrelHGLayersCmd->SetGuidance("Set number of HG layers in ECal barrel");
   fECalBarrelHGLayersCmd->SetParameterName("Layers", false);
-  fECalBarrelHGLayersCmd->SetRange("Layers>0");
+  fECalBarrelHGLayersCmd->SetRange("Layers>=0");
   fECalBarrelHGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   fECalBarrelLGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalBarrelLGLayers", this);
   fECalBarrelLGLayersCmd->SetGuidance("Set number of LG layers in ECal barrel");
   fECalBarrelLGLayersCmd->SetParameterName("Layers", false);
-  fECalBarrelLGLayersCmd->SetRange("Layers>0");
+  fECalBarrelLGLayersCmd->SetRange("Layers>=0");
   fECalBarrelLGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   fECalEndcapHGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalEndcapHGLayers", this);
   fECalEndcapHGLayersCmd->SetGuidance("Set number of HG layers in ECal end cap");
   fECalEndcapHGLayersCmd->SetParameterName("Layers", false);
-  fECalEndcapHGLayersCmd->SetRange("Layers>0");
+  fECalEndcapHGLayersCmd->SetRange("Layers>=0");
   fECalEndcapHGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   fECalEndcapLGLayersCmd = new G4UIcmdWithAnInteger("/detector/ECalEndcapLGLayers", this);
   fECalEndcapLGLayersCmd->SetGuidance("Set number of LG layers in ECal end cap");
   fECalEndcapLGLayersCmd->SetParameterName("Layers", false);
-  fECalEndcapLGLayersCmd->SetRange("Layers>0");
+  fECalEndcapLGLayersCmd->SetRange("Layers>=0");
   fECalEndcapLGLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // MuID commands
@@ -213,6 +223,8 @@ DetectorMessenger::~DetectorMessenger()
   delete fGeometryCmd;
   delete fTPCRadiusCmd;
   delete fTPCLengthCmd;
+  delete fECalAbsorberMaterialCmd;
+  delete fECalScintillatorMaterialCmd;
   delete fECalHGAbsorberThicknessCmd;
   delete fECalHGScintillatorThicknessCmd;
   delete fECalHGBoardThicknessCmd;
@@ -250,6 +262,12 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   } 
   else if (command == fTPCLengthCmd) {
     fDetector->SetTPCLength(fTPCLengthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fECalAbsorberMaterialCmd) {
+    fDetector->SetECalAbsorberMaterial(newValue);
+  }
+  else if (command == fECalScintillatorMaterialCmd) {
+    fDetector->SetECalScintillatorMaterial(newValue);
   }
   else if (command == fECalHGAbsorberThicknessCmd) {
     fDetector->SetECalHGAbsorberThickness(fECalHGAbsorberThicknessCmd->GetNewDoubleValue(newValue));

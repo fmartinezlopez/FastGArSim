@@ -133,12 +133,12 @@ void DetectorConstruction::DefineMaterials()
     // World material definition -- just air
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
 
-	// Define gas material
-	fGArTPCMaterial = new G4Material("GasMixture", fGasDensity*fPressure/fRefPressure, nel = 3, kStateGas, fTemperature, fPressure);
-	// Add elements to material
-	fGArTPCMaterial->AddElement(H,  fractionmass = 0.011);
-	fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
-	fGArTPCMaterial->AddElement(Ar, fractionmass = 0.957);
+    // Define gas material
+    fGArTPCMaterial = new G4Material("GasMixture", fGasDensity*fPressure/fRefPressure, nel = 3, kStateGas, fTemperature, fPressure);
+    // Add elements to material
+    fGArTPCMaterial->AddElement(H,  fractionmass = 0.011);
+    fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
+    fGArTPCMaterial->AddElement(Ar, fractionmass = 0.957);
 
     // Materials for ECal
     fECalAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_Pb");
@@ -864,7 +864,7 @@ void DetectorConstruction::SetGeometryType(G4String type)
         G4cout << "Geometry set to ND-GAr-like detector (magentised GAr TPC + ECal + MuID)" << G4endl;
     } else if (type == "lar") {
         fGeometryType = kLArLike;
-         G4cout << "Geometry set to ND-LAr-like detector" << G4endl;
+        G4cout << "Geometry set to ND-LAr-like detector" << G4endl;
     } else {
         G4cerr << "Unknown geometry type: " << type << G4endl;
         G4cerr << "Valid options are: 'gar' or 'lar'" << G4endl;
@@ -900,6 +900,38 @@ void DetectorConstruction::SetTPCLength(G4double length)
 {
     fTPCLength = length;
     G4cout << "TPC length set to " << fTPCLength/cm << " cm" << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalAbsorberMaterial(G4String material)
+{
+    G4Material* mat = G4NistManager::Instance()->FindOrBuildMaterial(material);
+    if (!mat) {
+        G4cerr << "Unknown ECal absorber material: " << material << G4endl;
+        G4cerr << "Use a valid NIST name" << G4endl;   
+        return;
+    }
+    fECalAbsorberMaterial = mat;
+    G4cout << "ECal absorber material set to " << material << G4endl;
+
+    if (fGeometryInitialized && fGeometryType == kGArLike) {
+        UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetECalScintillatorMaterial(G4String material)
+{
+    G4Material* mat = G4NistManager::Instance()->FindOrBuildMaterial(material);
+    if (!mat) {
+        G4cerr << "Unknown ECal scintillator material: " << material << G4endl;
+        G4cerr << "Use a valid NIST name" << G4endl;   
+        return;
+    }
+    fECalScintillatorMaterial = mat;
+    G4cout << "ECal scintillator material set to " << material << G4endl;
 
     if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();

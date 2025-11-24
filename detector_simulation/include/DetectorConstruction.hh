@@ -43,6 +43,8 @@ public:
     void SetMagneticFieldStrength(G4double bfield);
     void SetTPCRadius(G4double radius);
     void SetTPCLength(G4double length);
+    void SetECalAbsorberMaterial(G4String material);
+    void SetECalScintillatorMaterial(G4String material);
     void SetECalHGAbsorberThickness(G4double thickness);
     void SetECalHGScintillatorThickness(G4double thickness);
     void SetECalHGBoardThickness(G4double thickness);
