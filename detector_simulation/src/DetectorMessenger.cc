@@ -46,6 +46,16 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fTPCLengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // ECal commands
+  fECalAbsorberMaterialCmd = new G4UIcmdWithAString("/detector/ECalAbsorberMaterial", this);
+  fECalAbsorberMaterialCmd->SetGuidance("Set ECal absorber material");
+  fECalAbsorberMaterialCmd->SetParameterName("Material", false);
+  fECalAbsorberMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+   
+  fECalScintillatorMaterialCmd = new G4UIcmdWithAString("/detector/ECalScintillatorMaterial", this);
+  fECalScintillatorMaterialCmd->SetGuidance("Set ECal scintillator material");
+  fECalScintillatorMaterialCmd->SetParameterName("Material", false);
+  fECalScintillatorMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+   
   fECalHGAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/detector/ECalHGAbsorberThickness", this);
   fECalHGAbsorberThicknessCmd->SetGuidance("Set ECal HG absorber thickness");
   fECalHGAbsorberThicknessCmd->SetParameterName("Thickness", false);
@@ -213,6 +223,8 @@ DetectorMessenger::~DetectorMessenger()
   delete fGeometryCmd;
   delete fTPCRadiusCmd;
   delete fTPCLengthCmd;
+  delete fECalAbsorberMaterialCmd;
+  delete fECalScintillatorMaterialCmd;
   delete fECalHGAbsorberThicknessCmd;
   delete fECalHGScintillatorThicknessCmd;
   delete fECalHGBoardThicknessCmd;
@@ -250,6 +262,12 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   } 
   else if (command == fTPCLengthCmd) {
     fDetector->SetTPCLength(fTPCLengthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fECalAbsorberMaterialCmd) {
+    fDetector->SetECalAbsorberMaterial(newValue);
+  }
+  else if (command == fECalScintillatorMaterialCmd) {
+    fDetector->SetECalScintillatorMaterial(newValue);
   }
   else if (command == fECalHGAbsorberThicknessCmd) {
     fDetector->SetECalHGAbsorberThickness(fECalHGAbsorberThicknessCmd->GetNewDoubleValue(newValue));

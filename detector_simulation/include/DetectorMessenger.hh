@@ -27,6 +27,8 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fMagneticFieldStrengthCmd;
     G4UIcmdWithADoubleAndUnit* fTPCRadiusCmd;
     G4UIcmdWithADoubleAndUnit* fTPCLengthCmd;
+    G4UIcmdWithAString*        fECalAbsorberMaterialCmd;
+    G4UIcmdWithAString*        fECalScintillatorMaterialCmd;
     G4UIcmdWithADoubleAndUnit* fECalHGAbsorberThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fECalHGScintillatorThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fECalHGBoardThicknessCmd;
