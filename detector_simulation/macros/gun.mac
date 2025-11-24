@@ -4,18 +4,18 @@
 /control/execute macros/init_gun.mac
 
 # Configure particle gun
-/particle/particleType gamma
-/particle/momentum 1500.0 MeV
-/particle/momentumSpread 1500.0 MeV
-/particle/momentumDistribution uniform
+/particle/particleType proton
+/particle/momentum 500.0 MeV
+/particle/momentumSpread 100.0 MeV
+/particle/momentumDistribution gaussian
 /particle/position 0 0 0 cm
-/particle/positionSpread 0 0 0 cm
+/particle/positionSpread 100 100 100 cm
 /particle/positionDistribution uniform
-/particle/angleXZ 90.0 deg
-/particle/angleXZSpread 0.0 deg
+/particle/angleXZ 0.0 deg
+/particle/angleXZSpread 180.0 deg
 /particle/angleXZDistribution uniform
 /particle/angleXY 0.0 deg
-/particle/angleXYSpread 0.0 deg
+/particle/angleXYSpread 90.0 deg
 /particle/angleXYDistribution uniform
 
 # Start simulation

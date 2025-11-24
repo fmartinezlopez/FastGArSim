@@ -15,19 +15,10 @@
 /detector/BField 0. tesla
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
-
-/detector/ECalAbsorberMaterial G4_Cu
-/detector/ECalHGAbsorberThickness 2 mm 
-/detector/ECalLGAbsorberThickness 2 mm 
-/detector/ECalScintillatorMaterial G4_PLASTIC_SC_VINYLTOLUENE
-/detector/ECalHGScintillatorThickness 5 mm 
-/detector/ECalLGScintillatorThickness 5 mm 
-
-/detector/ECalBarrelHGLayers 0 
-/detector/ECalBarrelLGLayers 42 
-/detector/ECalEndcapHGLayers 0 
-/detector/ECalEndcapLGLayers 42
-
+/detector/ECalBarrelHGLayers 8 
+/detector/ECalBarrelLGLayers 34 
+/detector/ECalEndcapHGLayers 6 
+/detector/ECalEndcapLGLayers 36 
 /detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 
