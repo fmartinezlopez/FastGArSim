@@ -238,17 +238,17 @@ void AnalysisManager::AddTPCHit(const G4Track* track, const G4ThreeVector& pos, 
 }
 
 // Add an ECal hit to a particle
-void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID)
+void AnalysisManager::AddECalHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int segment, G4int layer, G4int detID)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddECalHit(::ECalHit(pos, time, edep, layer, detID));
+  particle->AddECalHit(::ECalHit(pos, time, edep, segment, layer, detID));
 }
 
 // Add a MuID hit to a particle
-void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int layer, G4int detID)
+void AnalysisManager::AddMuIDHit(const G4Track* track, const G4ThreeVector& pos, G4double time, G4double edep, G4int segment, G4int layer, G4int detID)
 {
   ::Particle* particle = GetParticle(track);
-  particle->AddMuIDHit(::MuIDHit(pos, time, edep, layer, detID));
+  particle->AddMuIDHit(::MuIDHit(pos, time, edep, segment, layer, detID));
 }
 
 // Update eventID if reading external file(s)
@@ -270,6 +270,8 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
 
   // Get copy number -- relevant for calorimeters
   G4int copyNo = step->GetPreStepPoint()->GetTouchableHandle()->GetCopyNumber();
+  G4int segmentIndex = copyNo / 1000;
+  G4int layerIndex = copyNo % 1000;
   
   // Get track and position information
   G4Track* track = step->GetTrack();
@@ -300,11 +302,11 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   }
   else if (volumeName.find("ECal") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is an ECal hit
-    AddECalHit(track, position, time, edep, copyNo, detID);
+    AddECalHit(track, position, time, edep, segmentIndex, layerIndex, detID);
   }
   else if (volumeName.find("MuID") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is a MuID hit
-    AddMuIDHit(track, position, time, edep, copyNo, detID);
+    AddMuIDHit(track, position, time, edep, segmentIndex, layerIndex, detID);
   }
 }
 
