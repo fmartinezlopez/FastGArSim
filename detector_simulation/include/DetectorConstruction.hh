@@ -139,6 +139,7 @@ private:
     // Materials
     G4Material* fWorldMaterial;
     G4Material* fGArTPCMaterial;
+    G4Material* fTPCPCBMaterial; 
     G4Material* fECalAbsorberMaterial;
     G4Material* fECalScintillatorMaterial;
     G4Material* fECalPCBMaterial;
@@ -173,6 +174,8 @@ private:
     // Detector configuration parameters (GAr)
     G4double fTPCRadius;                       // radius of TPC
     G4double fTPCLength;                       // length of TPC
+    G4double fTPCTotalLength;                  // length of TPC including PCB planes
+    G4double fTPCPCBThickness;                 // thickness of PCB planes
     G4double fECalBarrelGap;                   // distance between TPC and inner apothem of ECal barrel
     G4double fECalEndcapGap;                   // distance between TPC and start of ECal endcap (drift direction)
     G4double fECalHGAbsorberThickness;         // absorber thickness in high-granularity ECal layers

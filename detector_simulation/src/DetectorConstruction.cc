@@ -37,7 +37,7 @@ DetectorConstruction::DetectorConstruction()
   fFieldPhysical(nullptr), fTPCPhysical(nullptr),
   fLArTPCPhysical(nullptr),
   fMagneticField(nullptr), fMagneticFieldStrength(0.5*tesla),
-  fTPCRadius(250.0*cm), fTPCLength(500.0*cm),
+  fTPCRadius(250.0*cm), fTPCLength(500.0*cm), fTPCPCBThickness(0.5*cm),
   fECalBarrelGap(20.0*cm), fECalEndcapGap(25.0*cm),
   fECalNumSides(12),
   fECalHGAbsorberThickness(0.7*mm), fECalHGScintillatorThickness(5.0*mm), fECalHGBoardThickness(1.0*mm),
@@ -73,6 +73,7 @@ DetectorConstruction::~DetectorConstruction()
 void DetectorConstruction::ComputeDerivedQuantities()
 {
     // Define some numerical quantities that will be used extensively
+    fTPCTotalLength = fTPCLength + 2*fTPCPCBThickness;
     fECalHGLayerThickness = fECalHGAbsorberThickness + fECalHGScintillatorThickness + fECalHGBoardThickness;
     fECalLGLayerThickness = fECalLGAbsorberThickness + fECalLGScintillatorThickness;
     fMuIDLayerThickness = fMuIDAbsorberThickness + fMuIDScintillatorThickness;
@@ -129,6 +130,10 @@ void DetectorConstruction::DefineMaterials()
     Glass->AddElement(Zn, 0.0882);  // Zinc: 8.82%
     Glass->AddElement(Ti, 0.0292);  // Titanium: 2.92%
     Glass->AddElement(O,  0.444);   // Oxygen: 44.4%
+
+    G4Material* fr4 = new G4Material("FR4", 1.85*g/cm3, 2);
+    fr4->AddMaterial(Epoxy, 0.6);   // Epoxy: 60% (prev 0.206)
+    fr4->AddMaterial(Glass, 0.4);   // Glass: 40% (prev 0.794)
 	
     // World material definition -- just air
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
@@ -140,12 +145,13 @@ void DetectorConstruction::DefineMaterials()
     fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
     fGArTPCMaterial->AddElement(Ar, fractionmass = 0.957);
 
+    // Materials for drift chamber
+    fTPCPCBMaterial = fr4; 
+
     // Materials for ECal
     fECalAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_Pb");
     fECalScintillatorMaterial = nistManager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
-    fECalPCBMaterial = new G4Material("FR4", 1.85*g/cm3, 2);
-    fECalPCBMaterial->AddMaterial(Epoxy, 0.206);
-    fECalPCBMaterial->AddMaterial(Glass, 0.794);
+    fECalPCBMaterial = fr4;
     
     // Materials for MuID
     fMuIDAbsorberMaterial = nistManager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
@@ -412,7 +418,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
         // Calculate world size based on GAr detector dimensions
         worldSizeX = 2.5 * (fTPCRadius + fECalBarrelTotalThickness + fMuIDTotalThickness);
         worldSizeY = worldSizeX;
-        worldSizeZ = 2.5 * (fTPCLength/2 + fECalEndcapTotalThickness + fMuIDTotalThickness);
+        worldSizeZ = 2.5 * (fTPCTotalLength/2 + fECalEndcapTotalThickness + fMuIDTotalThickness);
     } else if (fGeometryType == kLArLike) {
         // Calculate world size based on LAr detector dimensions
         worldSizeX = 2.0 * fLArTotalLength;
@@ -440,12 +446,12 @@ G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
 void DetectorConstruction::ConstructFieldEnclosure()
 {
     // Calculate field enclosure size based on detector dimensions
-    G4double fieldEnclosureLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
+    G4double fieldEnclosureLength = fTPCTotalLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
     G4double fieldEnclosureRadius = fTPCRadius + fECalBarrelGap + fECalBarrelTotalThickness + fMuIDBarrelGap;
 
     // Create field enclosure cylinder
     G4Tubs* fieldSolid = new G4Tubs("FieldEnclosure", 0, fieldEnclosureRadius, fieldEnclosureLength/2, 0, twopi);
-    fFieldLogical = new G4LogicalVolume(fieldSolid, fWorldMaterial, "FieldEnclosure_log");
+    fFieldLogical = new G4LogicalVolume(fieldSolid, fGArTPCMaterial, "FieldEnclosure_log");
 
     // Set field enclosure visualization attributes
     G4VisAttributes* fieldVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));
@@ -460,22 +466,41 @@ void DetectorConstruction::ConstructFieldEnclosure()
 void DetectorConstruction::ConstructTPC()
 {
     // Create TPC cylindrical volume
-    G4Tubs* tpcSolid = new G4Tubs("GArTPC", 0, fTPCRadius, fTPCLength/2, 0, twopi);
+    G4Tubs* tpcSolid = new G4Tubs("GArTPC", 0, fTPCRadius, fTPCTotalLength/2, 0, twopi);
     fTPCLogical = new G4LogicalVolume(tpcSolid, fGArTPCMaterial, "TPC_log");
-    
-    // Set TPC visualization attributes
-    G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
-    tpcVisAtt->SetVisibility(true);
-    fTPCLogical->SetVisAttributes(tpcVisAtt);
-    
+
     // Place TPC in world
     fTPCPhysical = new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fTPCLogical, "TPC_phys", fFieldLogical, false, 0);
+
+    // Create and place TPC gas volume
+    G4Tubs* tpcGasSolid = new G4Tubs("TPCGas", 0, fTPCRadius, fTPCLength/2, 0, twopi);
+    G4LogicalVolume* fTPCGasLogical = new G4LogicalVolume(tpcGasSolid, fGArTPCMaterial, "TPCGas_log");
+    G4VisAttributes* tpcGasVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
+    tpcGasVisAtt->SetVisibility(true);
+    fTPCGasLogical->SetVisAttributes(tpcGasVisAtt);
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fTPCGasLogical, "TPCGas_phys", fTPCLogical, false, 0, true);
+
+    // Create PCB volume
+    G4Tubs* tpcPCBSolid = new G4Tubs("TPCPCB", 0, fTPCRadius, fTPCPCBThickness/2, 0, twopi);
+    G4LogicalVolume* tpcPCBLogical = new G4LogicalVolume(tpcPCBSolid, fTPCPCBMaterial, "TPCPCB_log");
+    G4VisAttributes* tpcPCBVisAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 0.0, 0.3));
+    tpcPCBVisAtt->SetVisibility(true);
+    tpcPCBLogical->SetVisAttributes(tpcPCBVisAtt);
+
+    // Rotation matrix to flip the negative PCB
+    G4RotationMatrix* flip = new G4RotationMatrix();
+    flip->rotateY(180*deg);
+    
+    // Place PCB volume
+    G4double pcbZ = fTPCLength/2 + fTPCPCBThickness/2;
+    new G4PVPlacement(0, G4ThreeVector(0, 0, pcbZ), tpcPCBLogical, "TPCPCB_pos_phys", fTPCLogical, false, 0, true);
+    new G4PVPlacement(flip, G4ThreeVector(0, 0, -pcbZ), tpcPCBLogical, "TPCPCB_neg_phys", fTPCLogical, false, 0, true);
 }
 
 void DetectorConstruction::ConstructECal()
 {
 
-    G4double ecalBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
+    G4double ecalBarrelTotalLength = fTPCTotalLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
     G4double ecalBarrelInnerDistance = fTPCRadius + fECalBarrelGap;
 
     ConstructSamplingBarrel("ECal",
@@ -489,7 +514,7 @@ void DetectorConstruction::ConstructECal()
                             G4Colour(0.0, 1.0, 0.0, 0.3));
 
     G4double ecalEndcapRadius = ecalBarrelInnerDistance;
-    G4double ecalEndcapStart = fTPCLength/2 + fECalEndcapGap;
+    G4double ecalEndcapStart = fTPCTotalLength/2 + fECalEndcapGap;
 
     ConstructSamplingEndcap("ECal",
                             ecalEndcapStart, ecalEndcapRadius, fECalEndcapTotalThickness,
@@ -504,7 +529,7 @@ void DetectorConstruction::ConstructECal()
 
 void DetectorConstruction::ConstructMuID()
 {
-    G4double muidBarrelTotalLength = fTPCLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
+    G4double muidBarrelTotalLength = fTPCTotalLength + 2*fECalEndcapGap + 2*fECalEndcapTotalThickness;
     G4double muidBarrelInnerDistance = fTPCRadius + fECalBarrelGap + fECalBarrelTotalThickness + fMuIDBarrelGap;
 
     ConstructSamplingBarrel("MuID",
