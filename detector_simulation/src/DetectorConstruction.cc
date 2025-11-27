@@ -488,7 +488,7 @@ void DetectorConstruction::ConstructECal()
                             &fECalBarrelLogical, &fECalScintillatorLogical,
                             G4Colour(0.0, 1.0, 0.0, 0.3));
 
-    G4double ecalEndcapRadius = ecalBarrelInnerDistance / std::cos(pi / fECalNumSides);
+    G4double ecalEndcapRadius = ecalBarrelInnerDistance;
     G4double ecalEndcapStart = fTPCLength/2 + fECalEndcapGap;
 
     ConstructSamplingEndcap("ECal",
@@ -542,17 +542,14 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
     G4double cosineAngle = std::cos(pi / numSides);
     G4double innerApothem = barrelInnerDistance;
     G4double outerApothem = innerApothem + totalThickness;
-
-    G4double innerRadius = innerApothem / cosineAngle;
-    G4double outerRadius = outerApothem / cosineAngle;
     G4double halfLength = barrelLength / 2;
 
     // Create barrel
     G4double phiStart = 0;
     G4double phiTotal = twopi;
     G4double zPlanes[] = {-halfLength, halfLength};
-    G4double rInner[]  = {innerRadius, innerRadius};
-    G4double rOuter[]  = {outerRadius, outerRadius};
+    G4double rInner[]  = {innerApothem, innerApothem};
+    G4double rOuter[]  = {outerApothem, outerApothem};
     
     G4Polyhedra* barrelSolid = new G4Polyhedra(baseName+"_barrel", phiStart, phiTotal, numSides, 2, zPlanes, rInner, rOuter);
     G4LogicalVolume* barrelLogical = new G4LogicalVolume(barrelSolid, fWorldMaterial, baseName+"_barrel_log");
@@ -610,16 +607,11 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             G4double scintillatorOuterApothem = absorberOuterApothem + layerHGScintillatorThickness;
             G4double layerOuterApothem = layerInnerApothem + layerHGThickness;
 
-            G4double layerInnerRadius = layerInnerApothem/cos(pi/numSides);
-            G4double absorberOuterRadius = absorberOuterApothem/cos(pi/numSides);
-            G4double scintillatorOuterRadius = scintillatorOuterApothem/cos(pi/numSides);
-            G4double layerOuterRadius = layerOuterApothem/cos(pi/numSides);
-            
             // Initialize layer radii arrays
-            G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
-            G4double absorberROuter[] = {absorberOuterRadius, absorberOuterRadius};
-            G4double scintillatorROuter[] = {scintillatorOuterRadius, scintillatorOuterRadius};
-            G4double layerROuter[]    = {layerOuterRadius, layerOuterRadius};
+            G4double layerRInner[]    = {layerInnerApothem, layerInnerApothem};
+            G4double absorberROuter[] = {absorberOuterApothem, absorberOuterApothem};
+            G4double scintillatorROuter[] = {scintillatorOuterApothem, scintillatorOuterApothem};
+            G4double layerROuter[]    = {layerOuterApothem, layerOuterApothem};
             
             // Create absorber layer
             G4Polyhedra* absorberSolid = new G4Polyhedra(baseName+"_barrel_HG_Absorber", segmentPhiStart, segmentAngle, 1, 2, zPlanes, layerRInner, absorberROuter);
@@ -666,14 +658,10 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             G4double absorberOuterApothem = layerInnerApothem + layerLGAbsorberThickness;
             G4double layerOuterApothem = layerInnerApothem + layerLGThickness;
 
-            G4double layerInnerRadius = layerInnerApothem/cos(pi/numSides);
-            G4double absorberOuterRadius = absorberOuterApothem/cos(pi/numSides);
-            G4double layerOuterRadius = layerOuterApothem/cos(pi/numSides);
-            
             // Initialize layer radii arrays
-            G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
-            G4double absorberROuter[] = {absorberOuterRadius, absorberOuterRadius};
-            G4double layerROuter[]    = {layerOuterRadius, layerOuterRadius};
+            G4double layerRInner[]    = {layerInnerApothem, layerInnerApothem};
+            G4double absorberROuter[] = {absorberOuterApothem, absorberOuterApothem};
+            G4double layerROuter[]    = {layerOuterApothem, layerOuterApothem};
             
             // Create absorber layer
             G4Polyhedra* absorberSolid = new G4Polyhedra(baseName+"_barrel_LG_Absorber", segmentPhiStart, segmentAngle, 1, 2, zPlanes, layerRInner, absorberROuter);
