@@ -605,10 +605,15 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
         for (G4int layerIndex = 0; layerIndex < numHGLayers; layerIndex++) {
 
             // Calculate inner and outer radii for this layer
-            G4double layerInnerRadius = innerRadius + layerIndex * layerHGThickness;
-            G4double absorberOuterRadius = layerInnerRadius + layerHGAbsorberThickness;
-            G4double scintillatorOuterRadius = absorberOuterRadius + layerHGScintillatorThickness;
-            G4double layerOuterRadius = layerInnerRadius + layerHGThickness;
+            G4double layerInnerApothem = innerApothem + layerIndex * layerHGThickness;
+            G4double absorberOuterApothem = layerInnerApothem + layerHGAbsorberThickness;
+            G4double scintillatorOuterApothem = absorberOuterApothem + layerHGScintillatorThickness;
+            G4double layerOuterApothem = layerInnerApothem + layerHGThickness;
+
+            G4double layerInnerRadius = layerInnerApothem/cos(pi/numSides);
+            G4double absorberOuterRadius = absorberOuterApothem/cos(pi/numSides);
+            G4double scintillatorOuterRadius = scintillatorOuterApothem/cos(pi/numSides);
+            G4double layerOuterRadius = layerOuterApothem/cos(pi/numSides);
             
             // Initialize layer radii arrays
             G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
@@ -651,15 +656,19 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
         }
 
         // LG layers start at an offset inner radius
-        G4double innerLGRadius = innerRadius + numHGLayers * layerHGThickness;
+        G4double innerLGApothem = innerApothem + numHGLayers * layerHGThickness;
 
         // Create LG layers within each segment
         for (G4int layerIndex = 0; layerIndex < numLGLayers; layerIndex++) {
 
             // Calculate inner and outer radii for this layer
-            G4double layerInnerRadius = innerLGRadius + layerIndex * layerLGThickness;
-            G4double absorberOuterRadius = layerInnerRadius + layerLGAbsorberThickness;
-            G4double layerOuterRadius = layerInnerRadius + layerLGThickness;
+            G4double layerInnerApothem = innerLGApothem + layerIndex * layerLGThickness;
+            G4double absorberOuterApothem = layerInnerApothem + layerLGAbsorberThickness;
+            G4double layerOuterApothem = layerInnerApothem + layerLGThickness;
+
+            G4double layerInnerRadius = layerInnerApothem/cos(pi/numSides);
+            G4double absorberOuterRadius = absorberOuterApothem/cos(pi/numSides);
+            G4double layerOuterRadius = layerOuterApothem/cos(pi/numSides);
             
             // Initialize layer radii arrays
             G4double layerRInner[]    = {layerInnerRadius, layerInnerRadius};
@@ -673,7 +682,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             absorberLogical->SetVisAttributes(absorberVisAtt);
             
             // Place absorber layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_LG_Absorber_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_LG_Absorber_phys", segmentLogical, false, layerIndex + numHGLayers, true);
             
             // Create scintillator layer
             G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_LG_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, layerROuter);
@@ -808,7 +817,7 @@ void DetectorConstruction::ConstructSamplingEndcap(G4String baseName,
         absorberLogical->SetVisAttributes(absorberVisAtt);
         
         // Place absorber layer
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerAbsorberZ), absorberLogical, baseName+"_endcap_LG_Absorber_phys", endcapLogical, false, layerIndex, true);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, layerAbsorberZ), absorberLogical, baseName+"_endcap_LG_Absorber_phys", endcapLogical, false, layerIndex + numHGLayers, true);
         
         layerPosition += layerLGAbsorberThickness;
 
