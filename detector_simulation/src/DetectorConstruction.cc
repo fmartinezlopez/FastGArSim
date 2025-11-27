@@ -38,7 +38,7 @@ DetectorConstruction::DetectorConstruction()
   fLArTPCPhysical(nullptr),
   fMagneticField(nullptr), fMagneticFieldStrength(0.5*tesla),
   fTPCRadius(250.0*cm), fTPCLength(500.0*cm), fTPCPCBThickness(0.5*cm),
-  fECalBarrelGap(20.0*cm), fECalEndcapGap(25.0*cm),
+  fECalBarrelGap(20.0*cm), fECalEndcapGap(80.0*cm),
   fECalNumSides(12),
   fECalHGAbsorberThickness(0.7*mm), fECalHGScintillatorThickness(5.0*mm), fECalHGBoardThickness(1.0*mm),
   fECalBarrelHGLayers(8), fECalEndcapHGLayers(6),
