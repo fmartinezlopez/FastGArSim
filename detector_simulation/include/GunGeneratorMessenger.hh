@@ -29,6 +29,7 @@ private:
   G4UIcmdWith3VectorAndUnit* fPositionCmd;
   G4UIcmdWith3VectorAndUnit* fPositionSpreadCmd;
   G4UIcmdWithAString*        fPositionDistCmd;
+  G4UIcmdWithADoubleAndUnit* fPositionRMaxCmd;
   G4UIcmdWithADoubleAndUnit* fXZAngleCmd;
   G4UIcmdWithADoubleAndUnit* fXZAngleSpreadCmd;
   G4UIcmdWithAString*        fXZAngleDistCmd;

@@ -67,6 +67,14 @@ GunGeneratorMessenger::GunGeneratorMessenger(GunGeneratorAction* gunGen)
   fPositionDistCmd->SetCandidates("uniform gaussian");
   fPositionDistCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  // Command to set initial position maximum radius (x and y distributions overridden to uniform if this is set)
+  fPositionRMaxCmd = new G4UIcmdWithADoubleAndUnit("/particle/positionRMax", this);
+  fPositionRMaxCmd->SetGuidance("Set the maximum radius of the starting position of the particle");
+  fPositionRMaxCmd->SetParameterName("RMax", false);
+  fPositionRMaxCmd->SetUnitCategory("Length");
+  fPositionRMaxCmd->SetRange("RMax>0.");
+  fPositionRMaxCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
   // Command to set XZ angle
   fXZAngleCmd = new G4UIcmdWithADoubleAndUnit("/particle/angleXZ", this);
   fXZAngleCmd->SetGuidance("Set the primary particle initial XZ angle.");
@@ -86,7 +94,7 @@ GunGeneratorMessenger::GunGeneratorMessenger(GunGeneratorAction* gunGen)
   fXZAngleDistCmd->SetGuidance("Select the XZ angle distribution.");
   fXZAngleDistCmd->SetGuidance("  Choice : uniform, gaussian");
   fXZAngleDistCmd->SetParameterName("angleXZDist", false);
-  fXZAngleDistCmd->SetCandidates("uniform gaussian");
+  fXZAngleDistCmd->SetCandidates("uniform gaussian isotropic");
   fXZAngleDistCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // Command to set XY angle
@@ -121,6 +129,7 @@ GunGeneratorMessenger::~GunGeneratorMessenger()
   delete fPositionCmd;
   delete fPositionSpreadCmd;
   delete fPositionDistCmd;
+  delete fPositionRMaxCmd;
   delete fXZAngleCmd;
   delete fXZAngleSpreadCmd;
   delete fXZAngleDistCmd;
@@ -159,6 +168,10 @@ void GunGeneratorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   }
   else if (command == fPositionDistCmd) {
     fGunGeneratorAction->SetPositionDist(newValue);
+  }
+  else if (command == fPositionRMaxCmd) {
+    G4double value = fPositionRMaxCmd->GetNewDoubleValue(newValue);
+    fGunGeneratorAction->SetPositionRMax(value);
   }
   else if (command == fXZAngleCmd) {
     G4double value = fXZAngleCmd->GetNewDoubleValue(newValue);
