@@ -9,6 +9,7 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "G4GenericMessenger.hh"
+#include "G4PhysicalConstants.hh"
 
 GunGeneratorAction::GunGeneratorAction()
 : G4VUserPrimaryGeneratorAction(),
@@ -21,6 +22,7 @@ GunGeneratorAction::GunGeneratorAction()
   fPosition(G4ThreeVector(0.0, 0.0, 0.0)*m),
   fPositionSpread(G4ThreeVector(0.0, 0.0, 0.0)*m),
   fPositionDist("uniform"),
+  fPositionRMax(-999.0*m),
   fXZAngle(0.00*deg),
   fXZAngleSpread(0.00*deg),
   fXZAngleDist("uniform"),
@@ -74,8 +76,8 @@ void GunGeneratorAction::Update()
     G4double momentum = RandomScalar(fMomentum, fMomentumSpread, fMomentumDist);
     fParticleGun->SetParticleMomentum(momentum);
 
-    // Set initial position
-    G4ThreeVector position = RandomVector(fPosition, fPositionSpread, fPositionDist);
+    // Set position
+    G4ThreeVector position = RandomVector(fPosition, fPositionSpread, fPositionDist, fPositionRMax);
     fParticleGun->SetParticlePosition(position);
 
     // Set direction
@@ -141,6 +143,12 @@ void GunGeneratorAction::SetPositionDist(G4String positionDist)
     G4cout << "Particle position distribution set to " << fPositionDist << G4endl;
 }
 
+void GunGeneratorAction::SetPositionRMax(G4double rmax)
+{
+    fPositionRMax = rmax;
+    G4cout << "Particle maximum radius set to " << fPositionRMax << G4endl;
+}
+
 void GunGeneratorAction::SetAngleXZ(G4double angleXZ)
 {
     fXZAngle = angleXZ;
@@ -184,16 +192,33 @@ G4double GunGeneratorAction::RandomScalar(G4double central_value, G4double sprea
         ret = central_value + (2.0*G4UniformRand() - 1.0) * spread;
     } else if (dist == "gaussian") {
         ret = G4RandGauss::shoot(central_value, spread);
+    } else if (dist == "isotropic") {
+        G4double cos_ret = 1.0 - 2.0*G4UniformRand();
+        ret = acos(cos_ret);
     }
     return ret;
 }
 
-G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist)
+G4ThreeVector GunGeneratorAction::RandomTruncatedVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax)
 {
+    G4ThreeVector ret;
+    G4double rad = rmax*sqrt(G4UniformRand());
+    G4double theta = twopi*G4UniformRand();
+    ret.setX(rad*cos(theta));
+    ret.setY(rad*sin(theta));
+    ret.setZ(RandomScalar(central_value.z(), spread.z(), dist));
+    return ret;
+}
+
+G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax=-999.)
+{
+    if (rmax > 0.0) return RandomTruncatedVector(central_value, spread, dist, rmax);
+
     G4ThreeVector ret;
     ret.setX(RandomScalar(central_value.x(), spread.x(), dist));
     ret.setY(RandomScalar(central_value.y(), spread.y(), dist));
     ret.setZ(RandomScalar(central_value.z(), spread.z(), dist));
+
     return ret;
 }
 
