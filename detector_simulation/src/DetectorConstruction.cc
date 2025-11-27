@@ -601,6 +601,9 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
         // Create HG layers within each segment
         for (G4int layerIndex = 0; layerIndex < numHGLayers; layerIndex++) {
 
+            // Define unique copy number in terms of segment and layer index
+            G4int layerCopyNo = 1000 * segmentIndex + layerIndex;
+
             // Calculate inner and outer radii for this layer
             G4double layerInnerApothem = innerApothem + layerIndex * layerHGThickness;
             G4double absorberOuterApothem = layerInnerApothem + layerHGAbsorberThickness;
@@ -620,7 +623,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             absorberLogical->SetVisAttributes(absorberVisAtt);
             
             // Place absorber layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_HG_Absorber_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_HG_Absorber_phys", segmentLogical, false, layerCopyNo, true);
             
             // Create scintillator layer
             G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_HG_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, scintillatorROuter);
@@ -629,7 +632,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
             
             // Place scintillator layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_HG_Scintillator_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_HG_Scintillator_phys", segmentLogical, false, layerCopyNo, true);
             
             // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
             if (layerIndex == 0) {
@@ -643,7 +646,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             boardLogical->SetVisAttributes(boardVisAtt);
             
             // Place PCB layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), boardLogical, baseName+"_barrel_HG_PCB_phys", segmentLogical, false, layerIndex, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), boardLogical, baseName+"_barrel_HG_PCB_phys", segmentLogical, false, layerCopyNo, true);
 
         }
 
@@ -652,6 +655,9 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
 
         // Create LG layers within each segment
         for (G4int layerIndex = 0; layerIndex < numLGLayers; layerIndex++) {
+
+            // Define unique copy number in terms of segment and layer index
+            G4int layerCopyNo = 1000 * segmentIndex + layerIndex + numHGLayers;
 
             // Calculate inner and outer radii for this layer
             G4double layerInnerApothem = innerLGApothem + layerIndex * layerLGThickness;
@@ -670,7 +676,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             absorberLogical->SetVisAttributes(absorberVisAtt);
             
             // Place absorber layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_LG_Absorber_phys", segmentLogical, false, layerIndex + numHGLayers, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), absorberLogical, baseName+"_barrel_LG_Absorber_phys", segmentLogical, false, layerCopyNo, true);
             
             // Create scintillator layer
             G4Polyhedra* scintillatorSolid = new G4Polyhedra(baseName+"_barrel_LG_Scintillator", segmentPhiStart, segmentAngle, 1, 2, zPlanes, absorberROuter, layerROuter);
@@ -679,7 +685,7 @@ void DetectorConstruction::ConstructSamplingBarrel(G4String baseName,
             scintillatorLogical->SetVisAttributes(scintillatorVisAtt);
             
             // Place scintillator layer
-            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerIndex + numHGLayers, true);
+            new G4PVPlacement(nullptr, G4ThreeVector(), scintillatorLogical, baseName+"_barrel_LG_Scintillator_phys", segmentLogical, false, layerCopyNo, true);
 
             // Store scintillator logical volume for later use (sensitive detector attachment, etc.)
             if (layerIndex == 0) {

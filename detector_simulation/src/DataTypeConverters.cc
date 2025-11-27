@@ -20,6 +20,7 @@ root::ECalHit ConvertECalHit(const ECalHit& g4Hit) {
         g4Hit.GetPosition().z()/cm,
         g4Hit.GetTime()/ns,
         g4Hit.GetEnergyDeposit()/MeV,
+        g4Hit.GetSegment(),
         g4Hit.GetLayer(),
         g4Hit.GetDetectorID()
     );
@@ -33,6 +34,7 @@ root::MuIDHit ConvertMuIDHit(const MuIDHit& g4Hit) {
         g4Hit.GetPosition().z()/cm,
         g4Hit.GetTime()/ns,
         g4Hit.GetEnergyDeposit()/MeV,
+        g4Hit.GetSegment(),
         g4Hit.GetLayer(),
         g4Hit.GetDetectorID()
     );

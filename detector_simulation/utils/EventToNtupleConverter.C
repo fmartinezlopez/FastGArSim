@@ -61,6 +61,7 @@ private:
     std::vector<Float_t> ecalHitX, ecalHitY, ecalHitZ;
     std::vector<Float_t> ecalHitTime;
     std::vector<Float_t> ecalHitEdep;
+    std::vector<Int_t> ecalHitSegment;
     std::vector<Int_t> ecalHitLayer;
     std::vector<Int_t> ecalHitDetID;
 
@@ -70,6 +71,7 @@ private:
     std::vector<Float_t> muidHitX, muidHitY, muidHitZ;
     std::vector<Float_t> muidHitTime;
     std::vector<Float_t> muidHitEdep;
+    std::vector<Int_t> muidHitSegment;
     std::vector<Int_t> muidHitLayer;
     std::vector<Int_t> muidHitDetID;
     
@@ -169,6 +171,7 @@ public:
         outputTree->Branch("ecalHitZ", &ecalHitZ);
         outputTree->Branch("ecalHitTime", &ecalHitTime);
         outputTree->Branch("ecalHitEdep", &ecalHitEdep);
+        outputTree->Branch("ecalHitSegment", &ecalHitSegment);
         outputTree->Branch("ecalHitLayer", &ecalHitLayer);
         outputTree->Branch("ecalHitDetID", &ecalHitDetID);
 
@@ -180,6 +183,7 @@ public:
         outputTree->Branch("muidHitZ", &muidHitZ);
         outputTree->Branch("muidHitTime", &muidHitTime);
         outputTree->Branch("muidHitEdep", &muidHitEdep);
+        outputTree->Branch("muidHitSegment", &muidHitSegment);
         outputTree->Branch("muidHitLayer", &muidHitLayer);
         outputTree->Branch("muidHitDetID", &muidHitDetID);
         
@@ -210,6 +214,7 @@ public:
         ecalHitX.clear(); ecalHitY.clear(); ecalHitZ.clear();
         ecalHitTime.clear();
         ecalHitEdep.clear();
+        ecalHitSegment.clear();
         ecalHitLayer.clear();
         ecalHitDetID.clear();
 
@@ -218,6 +223,7 @@ public:
         muidHitX.clear(); muidHitY.clear(); muidHitZ.clear();
         muidHitTime.clear();
         muidHitEdep.clear();
+        muidHitSegment.clear();
         muidHitLayer.clear();
         muidHitDetID.clear();
 
@@ -343,6 +349,7 @@ public:
                     ecalHitZ.push_back(hit.z);
                     ecalHitTime.push_back(hit.time);
                     ecalHitEdep.push_back(hit.energyDeposit);
+                    ecalHitSegment.push_back(hit.segment);
                     ecalHitLayer.push_back(hit.layer);
                     ecalHitDetID.push_back(hit.detID);
                 }
@@ -357,6 +364,7 @@ public:
                     ecalHitZ.push_back(hit.z);
                     ecalHitTime.push_back(hit.time);
                     ecalHitEdep.push_back(hit.energyDeposit);
+                    ecalHitSegment.push_back(hit.segment);
                     ecalHitLayer.push_back(hit.layer);
                     ecalHitDetID.push_back(hit.detID);
                 }
@@ -371,6 +379,7 @@ public:
                     muidHitZ.push_back(hit.z);
                     muidHitTime.push_back(hit.time);
                     muidHitEdep.push_back(hit.energyDeposit);
+                    muidHitSegment.push_back(hit.segment);
                     muidHitLayer.push_back(hit.layer);
                     muidHitDetID.push_back(hit.detID);
                 }
@@ -385,6 +394,7 @@ public:
                     muidHitZ.push_back(hit.z);
                     muidHitTime.push_back(hit.time);
                     muidHitEdep.push_back(hit.energyDeposit);
+                    muidHitSegment.push_back(hit.segment);
                     muidHitLayer.push_back(hit.layer);
                     muidHitDetID.push_back(hit.detID);
                 }
