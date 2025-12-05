@@ -45,7 +45,8 @@ private:
     // Random numbers
     G4double RandomScalar(G4double central_value, G4double spread, G4String dist);
     G4ThreeVector RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax);
-    G4ThreeVector RandomTruncatedVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax);
+    G4ThreeVector RandomVectorInCylinder(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax);
+    g4double GetDistOverlap(G4ThreeVector center, G4ThreeVector spread, G4String distribution, G4double rmax)
     
     // Configurable parameters with default values
     G4String fParticleName;
