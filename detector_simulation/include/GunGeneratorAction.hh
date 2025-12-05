@@ -64,7 +64,7 @@ private:
     G4double fXYAngleSpread;
     G4String fXYAngleDist;
 
-    bool firstEvent = true;
+    G4int n_calls = 0;
 
     // Helper methods
     void DefineCommands();

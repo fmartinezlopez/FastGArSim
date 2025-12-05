@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Path to FastGArSim build directory
-export FastGArSim=/exp/dune/app/users/jmartin4/FastGArSim/detector_simulation/build
+export FastGArSim=/exp/dune/app/users/fmlopez/Postdoc/FastGArSim/detector_simulation/build
 # Path to grid setup script
-export SetupScript=/exp/dune/app/users/jmartin4/FastGArSim/detector_simulation/jobs/grid_setup.sh
+export SetupScript=/exp/dune/app/users/fmlopez/Postdoc/FastGArSim/detector_simulation/jobs/grid_setup.sh
 
 if [ -z "${FastGArSim}" ]; then
   echo "[ERROR]: FastGArSim is not set up, cannot tar up required binaries."

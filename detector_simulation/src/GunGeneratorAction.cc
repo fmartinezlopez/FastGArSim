@@ -65,19 +65,22 @@ void GunGeneratorAction::GeneratePrimaries(G4Event* event)
 
 void GunGeneratorAction::Update()
 {
-    if (firstEvent) {
-        firstEvent = false;
-        G4double overlap = GetDistOverlap(fPosition, fPositionSpread, fPositionDist, fPositionRMax);
-        if (overlap < 0.2) {
-            G4cout << "XY position distribution: " << fPositionDist
-                   << ", centre [" << fPosition.x() << ", " << fPosition.y()
-                   << "], spread [" << fPositionSpread.x() << ", " << fPositionSpread.y()
-                   << "] has insufficient overlap with condition R < " << fPositionRMax << G4endl;
-            G4cout << "Proceding with no positionRMax condition" << G4endl;
-            fPositionRMax = -999.0;
+    if (n_calls==1) {
+        if ((fPositionDist == "uniform") 
+            && (fPosition.x()-fPositionSpread.x() <= -1.*fPositionRMax) && (fPosition.y()-fPositionSpread.y() <= -1.*fPositionRMax)
+            && (fPosition.x()+fPositionSpread.x() >= fPositionRMax) && (fPosition.y()+fPositionSpread.y() >= fPositionRMax)) {
+            fPositionDist = "uniform_cylindrical"; 
         }
-        else if ((overlap==1) && (fPositionDist=="uniform")) {
-            fPositionDist = "uniform_cylindrical";
+        else {
+            G4double overlap = GetDistOverlap(fPosition, fPositionSpread, fPositionDist, fPositionRMax);
+            if (overlap < 0.2) {
+                G4cout << "WARNING: XY position distribution: " << fPositionDist
+                       << ", centre [" << fPosition.x() << ", " << fPosition.y()
+                       << "], spread [" << fPositionSpread.x() << ", " << fPositionSpread.y()
+                       << "], has insufficient overlap with condition R < " << fPositionRMax << G4endl;
+                G4cout << "Proceeding with no positionRMax condition" << G4endl;
+                fPositionRMax = -999.0;
+            }     
         }
     }
 
@@ -101,19 +104,22 @@ void GunGeneratorAction::Update()
     G4double angleXY = RandomScalar(fXYAngle, fXYAngleSpread, fXYAngleDist);
     G4ThreeVector dir(sin(angleXZ)*sin(angleXY), sin(angleXZ)*cos(angleXY), cos(angleXZ));
     fParticleGun->SetParticleMomentumDirection(dir);
+
+    n_calls += 1;
 }
 
 G4double GunGeneratorAction::GetDistOverlap(G4ThreeVector center, G4ThreeVector spread, G4String distribution, G4double rmax) {
-    G4double num_outside = 0;
+    G4double num_inside = 0;
     G4int n_throws = 1000;
 
     for (G4int i_throw=0; i_throw<n_throws; i_throw++) {
         G4ThreeVector throw_pos = RandomVector(center, spread, distribution);
         G4double throw_r2 = throw_pos.x()*throw_pos.x() + throw_pos.y()*throw_pos.y();
-        if (throw_r2 > rmax*rmax) num_outside += 1.0;
+        if (throw_r2 <= rmax*rmax) num_inside += 1.0;
     }
 
-    return num_outside/n_throws;
+    G4cout << "Overlap between given distribution and rmax condition = " << num_inside/n_throws << G4endl;
+    return num_inside/n_throws;
 }
 
 void GunGeneratorAction::SetParticleType(G4String particleName)
