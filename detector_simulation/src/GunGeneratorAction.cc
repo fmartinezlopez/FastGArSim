@@ -66,8 +66,8 @@ void GunGeneratorAction::GeneratePrimaries(G4Event* event)
 void GunGeneratorAction::Update()
 {
     if (firstEvent) {
-        firstEvent = false
-        G4double overlap = GetDistOverlap(fPosition, fPositionSpread, fPositionDist, fPositionRMax)
+        firstEvent = false;
+        G4double overlap = GetDistOverlap(fPosition, fPositionSpread, fPositionDist, fPositionRMax);
         if (overlap < 0.2) {
             G4cout << "XY position distribution: " << fPositionDist
                    << ", centre [" << fPosition.x() << ", " << fPosition.y()
@@ -79,7 +79,6 @@ void GunGeneratorAction::Update()
         else if ((overlap==1) && (fPositionDist=="uniform")) {
             fPositionDist = "uniform_cylindrical";
         }
-        
     }
 
     // Set particle type
@@ -240,9 +239,9 @@ G4ThreeVector GunGeneratorAction::RandomVectorInCylinder(G4ThreeVector central_v
     return ret;
 }
 
-G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax=-999.)
+G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax)
 {
-    if (dist = "uniform_cylindrical") return RandomVectorInCylinder(central_value, spread, rmax)
+    if (dist == "uniform_cylindrical") return RandomVectorInCylinder(central_value, spread, rmax);
 
     G4ThreeVector ret;
     ret.setX(RandomScalar(central_value.x(), spread.x(), dist));
@@ -250,12 +249,12 @@ G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4Th
     ret.setZ(RandomScalar(central_value.z(), spread.z(), dist));
 
     if (rmax > 0.0) {
-        G4double r2 = ret.x()*ret.x() + ret.y()*ret.y()
-        G4int n_iter = 0
+        G4double r2 = ret.x()*ret.x() + ret.y()*ret.y();
+        G4int n_iter = 0;
         while(r2 > rmax*rmax & n_iter<100) {
             ret.setX(RandomScalar(central_value.x(), spread.x(), dist));
             ret.setY(RandomScalar(central_value.y(), spread.y(), dist));
-            r2 = ret.x()*ret.x() + ret.y()*ret.y()
+            r2 = ret.x()*ret.x() + ret.y()*ret.y();
 
             n_iter ++;
         }

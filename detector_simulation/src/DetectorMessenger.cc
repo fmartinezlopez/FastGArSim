@@ -1,4 +1,4 @@
-#include "DetectorMessenger.hh"detectormessen
+#include "DetectorMessenger.hh"
 #include "DetectorConstruction.hh"
 
 #include "G4UIdirectory.hh"
