@@ -1,0 +1,33 @@
+{
+  "_comment": "Configuration file for grid job submission",
+  "user": {
+    "username": "your_username",
+    "base_path": "/exp/dune/app/users/your_username/path/to/FastGArSim"
+  },
+  "paths": {
+    "build_dir": "detector_simulation/build",
+    "jobs_subdir": "detector_simulation/jobs"
+  },
+  "job_params": {
+    "num_jobs": 10,
+    "events_per_job": 1000
+  },
+  "output": {
+    "scratch_dir": "geant_test",
+    "output_prefix": "test"
+  },
+  "resources": {
+    "memory": "2500MB",
+    "disk": "2GB",
+    "expected_lifetime": "4h",
+    "cpu": 1,
+    "singularity_image": "/cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest"
+  },
+  "software": {
+    "cmake": "v3_27_4",
+    "geant4": "v4_11_2_p02",
+    "geant4_qual": "e26:prof",
+    "root": "v6_28_12",
+    "root_qual": "e26:p3915:prof"
+  }
+}
