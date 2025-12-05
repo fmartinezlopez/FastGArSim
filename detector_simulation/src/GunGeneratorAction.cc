@@ -65,6 +65,19 @@ void GunGeneratorAction::GeneratePrimaries(G4Event* event)
 
 void GunGeneratorAction::Update()
 {
+    if (firstEvent) {
+        firstEvent = false
+        G4double overlap = GetDistOverlap(fPosition, fPositionSpread, fPositionDist, fPositionRMax)
+        if (overlap < 0.4) {
+            G4cout << "XY position distribution: " << fPositionDist
+                   << ", centre [" << fPosition.x() << ", " << fPosition.y()
+                   << "], spread [" << fPositionSpread.x() << ", " << fPositionSpread.y()
+                   << "] has insufficient overlap with condition R < " << fPositionRMax << G4endl;
+            G4cout << "Proceding with no positionRMax condition" << G4endl;
+            fPositionRMax = -999.0;
+        }
+    }
+
     // Set particle type
     G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
     G4ParticleDefinition* particle = particleTable->FindParticle(fParticleName);
@@ -85,6 +98,19 @@ void GunGeneratorAction::Update()
     G4double angleXY = RandomScalar(fXYAngle, fXYAngleSpread, fXYAngleDist);
     G4ThreeVector dir(sin(angleXZ)*sin(angleXY), sin(angleXZ)*cos(angleXY), cos(angleXZ));
     fParticleGun->SetParticleMomentumDirection(dir);
+}
+
+G4double GunGeneratorAction::GetDistOverlap(G4ThreeVector center, G4ThreeVector spread, G4String distribution, G4double rmax) {
+    G4double num_outside = 0;
+    G4int n_throws = 1000;
+
+    for (G4int i_throw=0; i_throw<n_throws; i_throw++) {
+        G4ThreeVector throw_pos = RandomVector(center, spread, distribution);
+        G4double throw_r2 = throw_pos.x()*throw_pos.x() + throw_pos.y()*throw_pos.y();
+        if (throw_r2 > rmax*rmax) num_outside += 1.0;
+    }
+
+    return num_outside/n_throws;
 }
 
 void GunGeneratorAction::SetParticleType(G4String particleName)
@@ -199,7 +225,7 @@ G4double GunGeneratorAction::RandomScalar(G4double central_value, G4double sprea
     return ret;
 }
 
-G4ThreeVector GunGeneratorAction::RandomTruncatedVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax)
+G4ThreeVector GunGeneratorAction::RandomVectorInCylinder(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax)
 {
     G4ThreeVector ret;
     G4double rad = rmax*sqrt(G4UniformRand());
@@ -212,13 +238,22 @@ G4ThreeVector GunGeneratorAction::RandomTruncatedVector(G4ThreeVector central_va
 
 G4ThreeVector GunGeneratorAction::RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax=-999.)
 {
-    if (rmax > 0.0) return RandomTruncatedVector(central_value, spread, dist, rmax);
-
     G4ThreeVector ret;
     ret.setX(RandomScalar(central_value.x(), spread.x(), dist));
     ret.setY(RandomScalar(central_value.y(), spread.y(), dist));
     ret.setZ(RandomScalar(central_value.z(), spread.z(), dist));
 
+    if (rmax > 0.0) {
+        G4double r2 = ret.x()*ret.x() + ret.y()*ret.y()
+        G4int n_iter = 0
+        while(r2 > rmax*rmax & n_iter<100) {
+            ret.setX(RandomScalar(central_value.x(), spread.x(), dist));
+            ret.setY(RandomScalar(central_value.y(), spread.y(), dist));
+            r2 = ret.x()*ret.x() + ret.y()*ret.y()
+
+            n_iter ++;
+        }
+    }
     return ret;
 }
 
