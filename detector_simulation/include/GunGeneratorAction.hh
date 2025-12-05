@@ -27,6 +27,7 @@ public:
     void SetPosition(G4ThreeVector position);
     void SetPositionSpread(G4ThreeVector positionSpread);
     void SetPositionDist(G4String positionDist);
+    void SetPositionRMax(G4double rmax);
     void SetAngleXZ(G4double angleXZ);
     void SetAngleXZSpread(G4double angleXZSpread);
     void SetAngleXZDist(G4String angleXZDist);
@@ -43,7 +44,9 @@ private:
 
     // Random numbers
     G4double RandomScalar(G4double central_value, G4double spread, G4String dist);
-    G4ThreeVector RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist);
+    G4ThreeVector RandomVector(G4ThreeVector central_value, G4ThreeVector spread, G4String dist, G4double rmax=-999.0);
+    G4ThreeVector RandomVectorInCylinder(G4ThreeVector central_value, G4ThreeVector spread, G4double rmax);
+    G4double GetDistOverlap(G4ThreeVector center, G4ThreeVector spread, G4String distribution, G4double rmax);
     
     // Configurable parameters with default values
     G4String fParticleName;
@@ -53,12 +56,15 @@ private:
     G4ThreeVector fPosition;
     G4ThreeVector fPositionSpread;
     G4String fPositionDist;
+    G4double fPositionRMax;
     G4double fXZAngle;
     G4double fXZAngleSpread;
     G4String fXZAngleDist;
     G4double fXYAngle;
     G4double fXYAngleSpread;
     G4String fXYAngleDist;
+
+    G4int n_calls = 0;
 
     // Helper methods
     void DefineCommands();

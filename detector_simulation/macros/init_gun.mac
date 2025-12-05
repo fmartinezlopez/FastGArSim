@@ -12,13 +12,22 @@
 /physics/cutValue 1.0 mm
 
 # Initialize detector
-/detector/BField 0. tesla
+/detector/BField 0.5 tesla
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
+
+/detector/ECalAbsorberMaterial G4_Pb
+/detector/ECalHGAbsorberThickness 0.7 mm 
+/detector/ECalLGAbsorberThickness 1.4 mm 
+/detector/ECalScintillatorMaterial G4_PLASTIC_SC_VINYLTOLUENE
+/detector/ECalHGScintillatorThickness 5 mm 
+/detector/ECalLGScintillatorThickness 10 mm 
+
 /detector/ECalBarrelHGLayers 8 
 /detector/ECalBarrelLGLayers 34 
-/detector/ECalEndcapHGLayers 6 
-/detector/ECalEndcapLGLayers 36 
+/detector/ECalEndcapHGLayers 6
+/detector/ECalEndcapLGLayers 36
+
 /detector/MuIDLayers 3
 /detector/GasPressure 10.0 bar
 

@@ -296,7 +296,7 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   }
   
   // Record hit based on volume
-  if (volumeName.find("TPC") != std::string::npos) {
+  if (volumeName.find("TPCGas") != std::string::npos) {
     // This is a TPC hit
     AddTPCHit(track, position, edep, stepSize);
   }
