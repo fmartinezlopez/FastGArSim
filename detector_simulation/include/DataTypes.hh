@@ -274,6 +274,7 @@ public:
   G4String GetCreatorProcess() const { return creatorProcess; }
   G4String GetEndProcess() const { return endProcess; }
   G4int GetMotherID() const { return motherID; }
+  void SetMotherID(G4int id) {motherID = id;}
 
   const G4ThreeVector& GetStartPosition() const { return trajectory.GetPoints().front().position; }
   const G4ThreeVector& GetEndPosition() const { return trajectory.GetPoints().back().position; }
