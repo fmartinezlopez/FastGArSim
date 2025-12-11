@@ -20,4 +20,4 @@
 /particle/angleXYDistribution uniform
 
 # Start simulation
-/run/beamOn 10
+/run/beamOn 20

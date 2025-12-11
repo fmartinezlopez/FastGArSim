@@ -353,6 +353,12 @@ std::map<G4int, ::Particle*> AnalysisManager::SimplifyParticleCollection()
     if (process == "primary") {
       write = true;
     }
+    else { // Check for decay or conversion daughters of primary particles
+      G4String motherProcess = fTrackMap[particle->GetMotherID()]->GetCreatorProcess();
+      if (motherProcess == "primary" && (process == "Decay" || process == "conv")) {
+        write = true;
+      }
+    }
 
     // Check track length in TPC
     G4double tpc_length = particle->GetTPCPathLength()/cm;
@@ -379,38 +385,41 @@ std::map<G4int, ::Particle*> AnalysisManager::SimplifyParticleCollection()
   for (const auto& pair : fTrackMap) {
     ::Particle* particle = pair.second;
 
-    if (std::find(particles_to_write.begin(), particles_to_write.end(), pair.first) != particles_to_write.end()) {
-      particle_map[pair.first] = particle->Clone();
-    }
-    else {
-      // Add entry to daughter -> mother map
-      G4int trackID = particle->GetTrackID();
-      G4int momID = particle->GetMotherID();
-      daughter_mother_map[trackID] = momID;
+    // Add entry to daughter -> mother map
+    G4int trackID = particle->GetTrackID();
+    G4int momID = particle->GetMotherID();
+    daughter_mother_map[trackID] = momID;
 
-      // Initialize values for search
-      G4bool found = false;
-      G4int currentID = trackID;
-      G4int nIterations = 0;
+    // Initialize values for search
+    G4bool foundMother = false;
+    G4int currentID = trackID;
+    G4int nIterations = 0;
 
-      while (!found) {
-        // Shouldn't happen, but just in case...
-        if (nIterations > 1000) {
-          G4cerr << "Warning: Particle couldn't be backtracked!" << G4endl;
-          break;
+    while (!foundMother) {
+      // Shouldn't happen, but just in case...
+      if (nIterations > 1000) {
+        G4cerr << "Warning: Particle couldn't be backtracked!" << G4endl;
+        break;
+      }
+
+      G4int currentMom = daughter_mother_map[currentID];
+      if ((std::find(particles_to_write.begin(), particles_to_write.end(), currentMom) != particles_to_write.end()) || (currentMom == 0)) {
+        foundMother = true;
+        // For recorded particles, store the nearest recorded ancestor as the motherID
+        if (std::find(particles_to_write.begin(), particles_to_write.end(), pair.first) != particles_to_write.end()) {
+          if (currentMom != momID) {
+            particle->SetMotherID(currentMom);
+          }
+          particle_map[pair.first] = particle->Clone();
         }
-
-        G4int currentMom = daughter_mother_map[currentID];
-        if (std::find(particles_to_write.begin(), particles_to_write.end(), currentMom) != particles_to_write.end()) {
-          found = true;
+        else { // For omitted particles, hits belong to the nearest recorded ancestor
           particle_map[currentMom]->AddSecondaryContribution(particle);
         }
-        currentID = currentMom;
-        nIterations++;
       }
+      currentID = currentMom;
+      nIterations++;
     }
   }
-
   return particle_map;
 }
 
