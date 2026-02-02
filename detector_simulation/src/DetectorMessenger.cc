@@ -28,7 +28,8 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fMagneticFieldStrengthCmd = new G4UIcmdWithADoubleAndUnit("/detector/BField", this);
   fMagneticFieldStrengthCmd->SetGuidance("Set magnetic field strength");
   fMagneticFieldStrengthCmd->SetParameterName("BField", false);
-  fMagneticFieldStrengthCmd->SetUnitCandidates("T tesla G gauss");
+  fMagneticFieldStrengthCmd->SetUnitCategory("Magnetic flux density");
+  fMagneticFieldStrengthCmd->SetUnitCandidates("tesla gauss");
   fMagneticFieldStrengthCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   fTPCRadiusCmd = new G4UIcmdWithADoubleAndUnit("/detector/TPCRadius", this);
@@ -223,6 +224,7 @@ DetectorMessenger::~DetectorMessenger()
   delete fGeometryCmd;
   delete fTPCRadiusCmd;
   delete fTPCLengthCmd;
+  delete fMagneticFieldStrengthCmd;
   delete fECalAbsorberMaterialCmd;
   delete fECalScintillatorMaterialCmd;
   delete fECalHGAbsorberThicknessCmd;
@@ -262,6 +264,9 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   } 
   else if (command == fTPCLengthCmd) {
     fDetector->SetTPCLength(fTPCLengthCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fMagneticFieldStrengthCmd) {
+    fDetector->SetMagneticFieldStrength(fMagneticFieldStrengthCmd->GetNewDoubleValue(newValue));
   }
   else if (command == fECalAbsorberMaterialCmd) {
     fDetector->SetECalAbsorberMaterial(newValue);
