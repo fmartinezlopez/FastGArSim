@@ -161,7 +161,7 @@ void GENIEGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   }
 
   // Logical volume lookup defered to make sure volumes exist
-  SetTargetVolumeByName("TPC_log");
+  SetTargetVolumeByName("TPCGas_log");
   
   // Create a primary vertex at the neutrino interaction point
   //G4ThreeVector vtxPos(0, 0, 0);
