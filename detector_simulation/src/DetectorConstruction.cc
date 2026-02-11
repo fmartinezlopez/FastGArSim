@@ -60,6 +60,9 @@ DetectorConstruction::DetectorConstruction()
 
     // Define command interface
     DefineCommands();
+
+    // Define materials
+    DefineMaterials();
     
     fGeometryInitialized = true;
     
@@ -173,8 +176,6 @@ void DetectorConstruction::DefineMaterials()
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-    // Define materials
-    DefineMaterials();
     
     // Recalculate derived quantities
     ComputeDerivedQuantities();
