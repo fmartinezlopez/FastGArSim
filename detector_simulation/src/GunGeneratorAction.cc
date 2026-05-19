@@ -225,6 +225,10 @@ G4double GunGeneratorAction::RandomScalar(G4double central_value, G4double sprea
     G4double ret;
     if (dist == "uniform") {
         ret = central_value + (2.0*G4UniformRand() - 1.0) * spread;
+    } else if (dist == "loguniform") {
+        G4double log_min = log(central_value - spread);
+        G4double log_max = log(central_value + spread);
+        ret = exp(log_min + (log_max - log_min) * G4UniformRand());
     } else if (dist == "gaussian") {
         ret = G4RandGauss::shoot(central_value, spread);
     } else if (dist == "isotropic") {

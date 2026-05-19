@@ -40,9 +40,9 @@ GunGeneratorMessenger::GunGeneratorMessenger(GunGeneratorAction* gunGen)
   // Command to set momentum distribution type
   fMomentumDistCmd = new G4UIcmdWithAString("/particle/momentumDistribution", this);
   fMomentumDistCmd->SetGuidance("Select the momentum distribution.");
-  fMomentumDistCmd->SetGuidance("  Choice : uniform, gaussian");
+  fMomentumDistCmd->SetGuidance("  Choice : uniform, loguniform, gaussian");
   fMomentumDistCmd->SetParameterName("MomentumDist", false);
-  fMomentumDistCmd->SetCandidates("uniform gaussian");
+  fMomentumDistCmd->SetCandidates("uniform loguniform gaussian");
   fMomentumDistCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // Command to set initial position
@@ -92,7 +92,7 @@ GunGeneratorMessenger::GunGeneratorMessenger(GunGeneratorAction* gunGen)
   // Command to set XZ angle distribution type
   fXZAngleDistCmd = new G4UIcmdWithAString("/particle/angleXZDistribution", this);
   fXZAngleDistCmd->SetGuidance("Select the XZ angle distribution.");
-  fXZAngleDistCmd->SetGuidance("  Choice : uniform, gaussian");
+  fXZAngleDistCmd->SetGuidance("  Choice : uniform, gaussian, isotropic");
   fXZAngleDistCmd->SetParameterName("angleXZDist", false);
   fXZAngleDistCmd->SetCandidates("uniform gaussian isotropic");
   fXZAngleDistCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
