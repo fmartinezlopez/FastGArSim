@@ -142,11 +142,7 @@ void DetectorConstruction::DefineMaterials()
     fWorldMaterial = nistManager->FindOrBuildMaterial("G4_AIR");
 
     // Define gas material
-    fGArTPCMaterial = new G4Material("GasMixture", fGasDensity*fPressure/fRefPressure, nel = 3, kStateGas, fTemperature, fPressure);
-    // Add elements to material
-    fGArTPCMaterial->AddElement(H,  fractionmass = 0.011);
-    fGArTPCMaterial->AddElement(C,  fractionmass = 0.032);
-    fGArTPCMaterial->AddElement(Ar, fractionmass = 0.957);
+    DefineGasMaterial();
 
     // Materials for drift chamber
     fTPCPCBMaterial = fr4; 
@@ -174,11 +170,29 @@ void DetectorConstruction::DefineMaterials()
     fLArMuonWindowMaterial->AddElement(O, 1);
 }
 
+void DetectorConstruction::DefineGasMaterial()
+{
+    // (Re)build the TPC gas mixture so it reflects the current pressure/density,
+    // without touching any of the other materials defined in DefineMaterials()
+    G4NistManager *nistManager = G4NistManager::Instance();
+    G4Element* H  = nistManager->FindOrBuildElement("H");
+    G4Element* C  = nistManager->FindOrBuildElement("C");
+    G4Element* Ar = nistManager->FindOrBuildElement("Ar");
+
+    fGArTPCMaterial = new G4Material("GasMixture", fGasDensity*fPressure/fRefPressure, 3, kStateGas, fTemperature, fPressure);
+    fGArTPCMaterial->AddElement(H,  0.011);
+    fGArTPCMaterial->AddElement(C,  0.032);
+    fGArTPCMaterial->AddElement(Ar, 0.957);
+}
+
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
     
     // Recalculate derived quantities
     ComputeDerivedQuantities();
+
+    // Rebuild the gas material in case pressure/density changed since construction
+    DefineGasMaterial();
 
     // Construct world volume
     fWorldPhysical = ConstructWorld();

@@ -79,6 +79,7 @@ private:
 
     // Methods to create detector components
     void DefineMaterials();
+    void DefineGasMaterial();
     G4VPhysicalVolume* ConstructWorld();
 
     // GAr detector construction methods
