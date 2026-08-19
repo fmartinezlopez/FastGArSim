@@ -16,12 +16,18 @@
 #include <string>
 
 #include "TGeoManager.h"
+#include "TGeoVolume.h"
 #include "TObjArray.h"
+#include "TFile.h"
+#include "TString.h"
+#include "TSystem.h"
 
 void GeoVis(const char* fileName, const char* volName="World_log", Bool_t checkOverlaps=true, Bool_t writeROOT=false) {
   
+#ifdef __CLING__
   gSystem->Load("libGeom");
   gSystem->Load("libGdml");
+#endif
 
   // Get file basename
   std::string basename(fileName);

@@ -18,6 +18,10 @@
 #include "TFile.h"
 #include "TTree.h"
 
+#include "MacroPath.hh"
+
+#include <string>
+
 // Print usage instructions
 void PrintUsage()
 {
@@ -110,7 +114,16 @@ int main(int argc, char** argv)
     
     // Get the UI manager
     G4UImanager* UImanager = G4UImanager::GetUIpointer();
-    
+
+    // Let the macros find each other from any working directory. The current
+    // directory is searched first, so this only ever adds fallbacks and never
+    // changes which macro an existing command picks up. FASTGARSIM_MACRO_PATH
+    // (set by the generated setup.sh) is honoured next, then the directory
+    // holding the executable, which is what makes a relocated or installed
+    // copy work.
+    UImanager->SetMacroSearchPath(fastgarsim::MacroSearchPathString(argv[0]));
+    UImanager->ParseMacroSearchPath();
+
     if (macro.size())
     {
         // Batch mode - execute the specified macro
