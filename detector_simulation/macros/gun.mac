@@ -4,9 +4,9 @@
 /control/execute macros/init_gun.mac
 
 # Configure particle gun
-/particle/particleType pi0
-/particle/momentum 2500.0 MeV
-/particle/momentumSpread 2500.0 MeV
+/particle/particleType pip
+/particle/momentum 2550.0 MeV
+/particle/momentumSpread 2450.0 MeV
 /particle/momentumDistribution uniform
 /particle/position 0 0 0 cm
 /particle/positionSpread 260 260 250 cm
@@ -20,4 +20,4 @@
 /particle/angleXYDistribution uniform
 
 # Start simulation
-/run/beamOn 20
+/run/beamOn 10000

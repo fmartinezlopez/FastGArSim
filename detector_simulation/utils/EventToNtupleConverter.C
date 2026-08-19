@@ -17,6 +17,14 @@
 #include <iostream>
 #include <vector>
 
+// The root:: classes have to be known when this file is parsed, not merely by
+// the time the function runs, so the header is included here rather than
+// relying on a rootlogon having loaded the dictionary first. It is found via
+// rootlogon.C when ROOT is started in the build directory, or via
+// ROOT_INCLUDE_PATH after sourcing <build>/setup.sh. The dictionary itself is
+// loaded at run time, at the top of EventToNtupleConverter() below.
+#include "SimDataTypes.hh"
+
 using namespace root;
 
 // Converter class
@@ -448,8 +456,12 @@ public:
 void EventToNtupleConverter(const char* inputFile, const char* outputFile, 
                            const char* treeName = "Events") {
 
-    // Load the dictionary if not already loaded
-    gSystem->Load("libROOTDataDict");
+    // Load the dictionary if not already loaded. When this macro is compiled
+    // into the EventToNtupleConverter executable the dictionary is linked in,
+    // so the load is only needed in the interpreter.
+#ifdef __CLING__
+    gSystem->Load("libSimDataDict");
+#endif
 
     EventConverter converter;
     converter.Run(inputFile, outputFile, treeName);

@@ -1,0 +1,36 @@
+# Example macro for GArReconstruction
+#
+# Set the TTree name inside the input ROOT file.
+# For detector_simulation direct output: "Events" (default)
+# For converted ntuples (EventToNtupleConverter): "AnaTree"
+/reco/global/inputTreeName Events
+
+# Modules are added in the order they will execute.
+# At startup the framework checks that every module's declared inputs are
+# satisfied by either a simulation TTree branch or by an earlier module's
+# declared outputs.  If any required input is missing the run is aborted
+# with a clear error message.
+#
+# To add a new module:
+#   1. Create MyModule.hh (inherit from RecoModule, override GetInputSpec/GetOutputSpec)
+#   2. Create MyModule.cc (register with ModuleFactory, implement Initialize/Execute/Finalize)
+#   3. CMakeLists.txt picks it up automatically via file(GLOB sources src/*.cc)
+#   4. Add /reco/addModule below in the right position relative to its dependencies
+
+# --------------------------------------------------------------------------
+# ECal digitization  (reads: Event branch  -- writes: ECalTileDigiHits, ECalStripDigiHits)
+# --------------------------------------------------------------------------
+/reco/addModule ecalDigi ECalDigiModule
+/reco/ecalDigi/tileSize       0.5
+/reco/ecalDigi/stripSize      0.5
+/reco/ecalDigi/timeRes        0.1
+/reco/ecalDigi/propVelocity   10.0
+/reco/ecalDigi/lightYield     1000.0
+/reco/ecalDigi/effectivePE    5000.0
+/reco/ecalDigi/sipmNoise      1.0
+/reco/ecalDigi/sipmGain       10.0
+/reco/ecalDigi/attLength      150.0
+/reco/ecalDigi/adcRange       4096
+/reco/ecalDigi/adcThreshold   10
+/reco/ecalDigi/minClusterBins 2
+/reco/ecalDigi/maxPropTime    50.0

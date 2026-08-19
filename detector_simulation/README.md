@@ -8,7 +8,7 @@ This simulation models a detector with the following components:
 - Cylindrical high-pressure gaseous argon Time Projection Chamber (TPC)
 - Electromagnetic calorimeter (ECal) with separate barrel and endcap regions
   - Barrel and endcap ECal with configurable high-gain (HG) and low-gain (LG) layers
-  - Alternating layers of lead absorber and plastic scintillator
+  - Alternating layers of absorber and scintillator
 - Muon identification system (MuID) barrel with layers of absorber and scintillator
 - Configurable magnetic field
 
@@ -25,26 +25,16 @@ This simulation models a detector with the following components:
 - Multi-threaded event processing support
 - Grid job submission tools for large-scale production
 
-## Requirements
+## Building
 
-- Geant4 (10.7 or later recommended)
-- CMake (3.16 or later)
-- C++ compiler with C++17 support
-- ROOT
-
-## Building the Project
+Built as part of the top-level FastGArSim build, or on its own:
 
 ```bash
-# Create a build directory
-mkdir build
-cd build
-
-# Configure with CMake
-cmake ..
-
-# Build the application
-make -j4
+mkdir build && cd build
+cmake .. && make -j4
 ```
+
+Requirements, build options and environment setup (including the FNAL machines) are in the [top-level README](../README.md#building).
 
 ## Running the Simulation
 
@@ -67,6 +57,12 @@ Run the simulation with visualization:
 ```bash
 ./GArSimulation -v
 ```
+
+`-v` is what constructs the Geant4 visualization manager, and it also executes [macros/vis.mac](macros/vis.mac) for you. The `/vis/` commands do not exist without it, so `-m macros/vis.mac` on its own fails with `COMMAND NOT FOUND </vis/open ...>`.
+
+### Where the macros are looked up
+
+The run macros refer to each other by paths relative to the application directory (`/control/execute macros/init.mac`). `GArSimulation` therefore sets Geant4's macro search path at start-up to the working directory, then `FASTGARSIM_MACRO_PATH` (exported by the generated `setup.sh`), then the directory holding the executable and its `macros/` subdirectory. The program can consequently be started from anywhere, including from a relocated or tarballed build as used by the grid jobs. Because the working directory is searched first, a local `macros/` still takes precedence.
 
 ## Configuring the Simulation
 
@@ -214,12 +210,12 @@ The data types are defined in [common/include/SimDataTypes.hh](../common/include
 
 The object-based `Events` TTree is not directly suited for event-loop analyses. The macro [utils/EventToNtupleConverter.C](utils/EventToNtupleConverter.C) converts it into a flat ntuple that is easier to work with.
 
-**Usage (from ROOT):**
+**Usage:**
 
-```cpp
-// Load the simulation dictionary first
-gSystem->Load("libROOTDataDict");
-.x utils/EventToNtupleConverter.C("input.root", "output_ntuple.root")
+The ntuple maker is also built as an executable, installed into `bin`. Run it from the shell as:
+
+```bash
+EventToNtupleConverter input.root output_ntuple.root
 ```
 
 The converter produces a file with two TTrees:
@@ -236,8 +232,3 @@ The converter produces a file with two TTrees:
 - **`GeoTree`** — a copy of the `Geometry` tree from the simulation file, renamed for consistency.
 
 This flat ntuple is the expected input format for the analysis macros in [analysis/](../analysis/).
-
-## Authors
-
-- Francisco Martinez Lopez — [frmart@iu.edu](mailto:frmart@iu.edu)
-- Jude Martin — [j.martin24@imperial.ac.uk](mailto:j.martin24@imperial.ac.uk)

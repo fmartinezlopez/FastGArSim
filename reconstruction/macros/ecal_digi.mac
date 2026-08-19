@@ -1,0 +1,41 @@
+# ECal digitization macro
+#
+# Reads directly from a detector_simulation output file (Events/Geometry trees).
+# Dependency chain:
+#   Events TTree "Event" branch (root::Event)  --> ECalDigiModule
+#       --> ECalTileDigiHits  (digi::TileDigiHit)
+#       --> ECalStripDigiHits (digi::StripDigiHit)
+#
+# Run with:
+#   GArReconstruction -i gar_simulation.root -m ecal_digi.mac -o ecal_digi.root
+
+# Input tree name in the simulation file (written by detector_simulation)
+/reco/global/inputTreeName Events
+
+# --------------------------------------------------------------------------
+# ECal digitization  (reads: Event -- writes: ECalTileDigiHits, ECalStripDigiHits)
+# --------------------------------------------------------------------------
+/reco/addModule ecalDigi ECalDigiModule
+
+# Segmentation
+/reco/ecalDigi/tileSize       0.5    # HG tile size [cm]
+/reco/ecalDigi/stripSize      0.5    # LG strip width [cm]
+
+# Timing
+/reco/ecalDigi/timeRes        0.1    # Time bin width [ns]
+/reco/ecalDigi/propVelocity   10.0   # Light propagation velocity in strip [cm/ns]
+
+# SiPM response
+/reco/ecalDigi/lightYield     1000.0 # Photoelectrons per MeV
+/reco/ecalDigi/effectivePE    5000.0 # SiPM saturation (effective pixel count)
+/reco/ecalDigi/sipmNoise      1.0    # Electronic noise [p.e.]
+/reco/ecalDigi/sipmGain       10.0   # ADC counts per photoelectron
+/reco/ecalDigi/adcRange       4096   # 12-bit ADC
+
+# Strip light attenuation
+/reco/ecalDigi/attLength      150.0  # Scintillator attenuation length [cm]; 0 = no attenuation
+
+# Cluster finding
+/reco/ecalDigi/adcThreshold   10     # Minimum ADC for a time bin to enter a cluster
+/reco/ecalDigi/minClusterBins 2      # Minimum number of time bins in a valid cluster
+/reco/ecalDigi/maxPropTime    50.0   # Max time window for dual-SiPM cluster matching [ns]
