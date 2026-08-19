@@ -18,51 +18,9 @@
 #include "TFile.h"
 #include "TTree.h"
 
-#include <cstdlib>
-#include <filesystem>
-#include <sstream>
+#include "MacroPath.hh"
+
 #include <string>
-
-namespace
-{
-    // Directory holding this executable. The run macros refer to each other by
-    // paths relative to the application directory (/control/execute
-    // macros/init.mac), so knowing it lets them be found whatever directory
-    // the program was started from.
-    std::string ExecutableDir(const char* argv0)
-    {
-        namespace fs = std::filesystem;
-
-        fs::path exe(argv0 != nullptr ? argv0 : "");
-
-        // Started through PATH, with no directory component: look it up there
-        if (!exe.has_parent_path())
-        {
-            if (const char* path = std::getenv("PATH"))
-            {
-                std::stringstream candidates(path);
-                std::string dir;
-                while (std::getline(candidates, dir, ':'))
-                {
-                    if (dir.empty()) continue;
-                    std::error_code ec;
-                    const fs::path candidate = fs::path(dir) / exe;
-                    if (fs::is_regular_file(candidate, ec))
-                    {
-                        exe = candidate;
-                        break;
-                    }
-                }
-            }
-        }
-
-        std::error_code ec;
-        fs::path resolved = fs::weakly_canonical(exe, ec);
-        if (ec) resolved = exe;
-
-        return resolved.has_parent_path() ? resolved.parent_path().string() : ".";
-    }
-}
 
 // Print usage instructions
 void PrintUsage()
@@ -163,18 +121,8 @@ int main(int argc, char** argv)
     // (set by the generated setup.sh) is honoured next, then the directory
     // holding the executable, which is what makes a relocated or installed
     // copy work.
-    {
-        std::string searchPath = ".";
-        if (const char* envPath = std::getenv("FASTGARSIM_MACRO_PATH"))
-        {
-            searchPath += std::string(":") + envPath;
-        }
-        const std::string exeDir = ExecutableDir(argv[0]);
-        searchPath += ":" + exeDir + ":" + exeDir + "/macros";
-
-        UImanager->SetMacroSearchPath(searchPath);
-        UImanager->ParseMacroSearchPath();
-    }
+    UImanager->SetMacroSearchPath(fastgarsim::MacroSearchPathString(argv[0]));
+    UImanager->ParseMacroSearchPath();
 
     if (macro.size())
     {

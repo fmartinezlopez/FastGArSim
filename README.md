@@ -130,7 +130,7 @@ The tools are discovered, not listed. Each package scans one directory and build
 | Directory scanned | Tools currently built |
 | --- | --- |
 | `detector_simulation/utils/` | `EventToNtupleConverter`, `GeoVis` |
-| `reconstruction/utils/` | `ECalDigiAnalysis`, `RecoExample` |
+| `reconstruction/utils/` | `ECalDigiAnalysis`, `RecoExample`, `TPCRecoAnalysis` |
 | `analysis/macros/` | `ExampleAnalysis`, `TruncatedDEDX` |
 
 Dropping a new macro into one of those directories is all it takes to get a tool for it — no CMake edits. The macro's entry function has to share its file name, which is the convention ROOT already requires for `.x Macro.C`.
@@ -170,7 +170,8 @@ GArSimulation -m macros/gun.mac
 EventToNtupleConverter output.root ntuple.root
 
 # 3. Reconstruct (optional; reads the simulation output, not the ntuple)
-GArReconstruction -i output.root -m ../reconstruction/macros/ecal_digi.mac -o reco.root
+GArReconstruction -i output.root -m macros/ecal_digi.mac -o ecal_reco.root
+GArReconstruction -i output.root -m macros/tpc_reco.mac  -o tpc_reco.root
 
 # 4. Analyse
 ExampleAnalysis ntuple.root example_out.root

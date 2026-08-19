@@ -10,4 +10,11 @@
 #pragma link C++ class digi::StripDigiHit+;
 #pragma link C++ class std::vector<digi::StripDigiHit>+;
 
+#pragma link C++ class digi::TPCWaveform+;
+#pragma link C++ class std::vector<digi::TPCWaveform>+;
+#pragma link C++ class digi::TPCHit+;
+#pragma link C++ class std::vector<digi::TPCHit>+;
+#pragma link C++ class digi::TPCCluster+;
+#pragma link C++ class std::vector<digi::TPCCluster>+;
+
 #endif

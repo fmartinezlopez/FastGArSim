@@ -1,0 +1,81 @@
+# TPC readout simulation and hit reconstruction
+#
+# Reads directly from a detector_simulation output file (Events/Geometry trees).
+# Dependency chain:
+#   Events TTree "Event" branch (root::Event)  --> TPCDigiModule
+#       --> TPCWaveforms (digi::TPCWaveform)   --> TPCHitFinderModule
+#       --> TPCHits      (digi::TPCHit)        --> TPCClusterModule
+#       --> TPCClusters  (digi::TPCCluster)
+#
+# Run with:
+#   GArReconstruction -i gar_simulation.root -m tpc_reco.mac -o tpc_reco.root
+
+# Input tree name in the simulation file (written by detector_simulation)
+/reco/global/inputTreeName Events
+
+# --------------------------------------------------------------------------
+# TPC readout simulation  (reads: Event -- writes: TPCWaveforms)
+# --------------------------------------------------------------------------
+/reco/addModule tpcDigi TPCDigiModule
+
+# Pad plane. The radius comes from the Geometry tree; doubleSided puts a
+# cathode at z = 0 and an anode at each end, halving the drift distance.
+/reco/tpcDigi/padPitch              0.6    # Pad pitch [cm]
+/reco/tpcDigi/doubleSided           true   # false: one anode, set by readoutSide
+/reco/tpcDigi/readoutSide           1      # Single-sided only: +1 = +z end, -1 = -z
+
+# Pad response function: exp(-(|dx|^p + |dy|^p) / 2 sigma^p), sigma = pitch/width
+/reco/tpcDigi/padResponseWidth      2.5    # sigma = padPitch / this
+/reco/tpcDigi/padResponseShape      4      # Exponent p
+/reco/tpcDigi/padResponseRange      1      # Pads either side that share charge
+/reco/tpcDigi/padResponseNormalize  true   # false: charge between pads is lost
+
+# Ionization
+/reco/tpcDigi/wValue                26.4   # [eV] per electron-ion pair
+/reco/tpcDigi/fanoFactor            0.16
+/reco/tpcDigi/collectionEfficiency  0.7    # Electrons surviving to the pads
+
+# Drift
+/reco/tpcDigi/driftVelocity         3.011  # [cm/us]
+/reco/tpcDigi/electronLifetime      3e6    # [us]
+/reco/tpcDigi/diffusionT            0.0160 # Transverse   [cm/sqrt(cm)]
+/reco/tpcDigi/diffusionL            0.0201 # Longitudinal [cm/sqrt(cm)]
+/reco/tpcDigi/electronsPerCluster   20     # Electrons drifted as one unit
+/reco/tpcDigi/minClusters           10     # Minimum macro-electrons per deposit
+
+# Electronics
+/reco/tpcDigi/samplingRate          20.0   # [MHz]
+/reco/tpcDigi/shapingTime           0.1    # CR-RC^2 shaping time [us]
+/reco/tpcDigi/gain                  0.5    # Peak ADC per collected electron
+/reco/tpcDigi/noiseLevel            5.0    # [electrons]
+/reco/tpcDigi/adcPedestal           100.0  # [ADC]
+/reco/tpcDigi/adcRange              4096   # 12-bit ADC
+
+# Zero suppression and output
+/reco/tpcDigi/adcThreshold          12.0   # Above pedestal [ADC]
+/reco/tpcDigi/roiPadding            5      # Ticks kept either side of a pulse
+/reco/tpcDigi/saveTruth             true   # Carry MC truth on the waveforms
+/reco/tpcDigi/writeWaveforms        false  # true also writes them to the tree
+/reco/tpcDigi/seed                  0      # 0 = seed from the system
+
+# --------------------------------------------------------------------------
+# Hit finding  (reads: TPCWaveforms -- writes: TPCHits)
+# --------------------------------------------------------------------------
+/reco/addModule tpcHits TPCHitFinderModule
+
+/reco/tpcHits/threshold             12.0   # Above pedestal [ADC]
+/reco/tpcHits/minPulseTicks         2      # Shortest pulse accepted
+/reco/tpcHits/minPulseADC           0.0    # Smallest integral accepted [ADC]
+/reco/tpcHits/valleyFraction        0.7    # Depth needed to split merged peaks
+/reco/tpcHits/chargeCalibration     1.0    # Scales the reconstructed charge
+/reco/tpcHits/lifetimeCorrection    true   # Undo the attenuation along the drift
+
+# --------------------------------------------------------------------------
+# Clustering  (reads: TPCHits -- writes: TPCClusters)
+# --------------------------------------------------------------------------
+/reco/addModule tpcClusters TPCClusterModule
+
+/reco/tpcClusters/epsilon           2.0    # DBSCAN neighbourhood radius [cm]
+/reco/tpcClusters/minPoints         3      # Neighbours making a hit a core hit
+/reco/tpcClusters/minHits           3      # Smallest cluster kept
+/reco/tpcClusters/separatePlanes    true   # Never merge the two drift volumes

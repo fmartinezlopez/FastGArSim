@@ -51,13 +51,15 @@ set_target_properties(GArReconstruction PROPERTIES
 # Copy the configuration macros next to the executable
 fastgarsim_copy_files(DESTINATION macros
                       FILES macros/example.mac
-                            macros/ecal_digi.mac)
+                            macros/ecal_digi.mac
+                            macros/tpc_reco.mac)
 
 #----------------------------------------------------------------------------
 # Copy the ROOT utility macros to the build directory
 fastgarsim_copy_files(DESTINATION .
                       FILES utils/RecoExample.C
-                            utils/ECalDigiAnalysis.C)
+                            utils/ECalDigiAnalysis.C
+                            utils/TPCRecoAnalysis.C)
 
 #----------------------------------------------------------------------------
 # One command line tool per macro in utils/, named after the macro

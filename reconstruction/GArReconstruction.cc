@@ -9,6 +9,7 @@
 
 #include "RecoDataTypes.hh"
 #include "RecoManager.hh"
+#include "MacroPath.hh"
 
 void PrintUsage() {
     std::cout << "\n Usage: GArReconstruction [options]" << std::endl;
@@ -67,18 +68,26 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // The macros are copied next to the executable, so look for them there as
+    // well as in the working directory; see common/include/MacroPath.hh
+    const std::string resolvedMacro = fastgarsim::FindMacro(macroFile, argv[0]);
+
     std::cout << "\n Configuration:" << std::endl;
     std::cout << "   Input file:  " << inputFile << std::endl;
     std::cout << "   Output file: " << outputFile << std::endl;
-    std::cout << "   Macro file:  " << macroFile << std::endl;
+    std::cout << "   Macro file:  " << resolvedMacro << std::endl;
     std::cout << std::endl;
 
     // Initialize reconstruction manager
     RecoManager* recoManager = new RecoManager();
 
     // Load reconstruction configuration from macro
-    if (!recoManager->LoadMacro(macroFile)) {
-        std::cerr << "\nError: Failed to load macro file!" << std::endl;
+    if (!recoManager->LoadMacro(resolvedMacro)) {
+        std::cerr << "\nError: Failed to load macro file '" << macroFile << "'!" << std::endl;
+        std::cerr << "Looked in:" << std::endl;
+        for (const std::string& directory : fastgarsim::MacroSearchPath(argv[0])) {
+            std::cerr << "   " << directory << std::endl;
+        }
         delete recoManager;
         return 1;
     }
