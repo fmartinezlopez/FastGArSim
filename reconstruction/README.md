@@ -155,7 +155,7 @@ The pad plane radius and the drift length come from the `Geometry` tree; everyth
 
 ## TPC response model
 
-`TPCDigiModule` follows the same chain as the standalone Python model it was ported from, one energy deposit at a time:
+`TPCDigiModule` applies the following chain to the simulated energy deposits, one at a time:
 
 1. **Ionization.** The deposit gives `E / W` electron-ion pairs on average, fluctuating with the Fano factor (Poisson below 20 pairs, where the Gaussian is a poor description).
 2. **Drift.** The TPC is a cylinder about the `z` axis, so the readout planes are its end faces at `z = ±L/2` and the drift is along `z`. With `doubleSided` the cathode sits at `z = 0` and each deposit drifts to the nearer end. The charge is attenuated by `exp(-t/lifetime)` and by `collectionEfficiency`; diffusion spreads it by `sigma = D sqrt(d)` transversally and longitudinally.
