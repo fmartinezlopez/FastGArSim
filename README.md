@@ -4,7 +4,7 @@ A Geant4-based simulation, reconstruction and analysis framework for a high-pres
 
 The detector is a cylindrical high-pressure gaseous argon TPC in a magnetic field, surrounded by an electromagnetic calorimeter with separate barrel and endcap regions and a muon identification system. Geometry, physics models and event generation are all configurable at run time through macro commands.
 
-## The chain
+## Modules
 
 | Stage | Package | Produces |
 | --- | --- | --- |
