@@ -53,6 +53,7 @@ class DetectorMessenger: public G4UImessenger
     G4UIcmdWithABool*          fLArEnableMuonWindowCmd;
     G4UIcmdWithADoubleAndUnit* fLArMuonWindowThicknessCmd;
     G4UIcmdWithADoubleAndUnit* fPressureCmd;
+    G4UIcmdWithADoubleAndUnit* fTPCMaxStepCmd;
 };
 
 #endif

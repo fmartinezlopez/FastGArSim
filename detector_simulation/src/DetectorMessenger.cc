@@ -217,6 +217,14 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
   fPressureCmd->SetUnitCategory("Pressure");
   fPressureCmd->SetRange("GasPressure>0.");
   fPressureCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  // Stepping commands
+  fTPCMaxStepCmd = new G4UIcmdWithADoubleAndUnit("/detector/TPCMaxStep", this);
+  fTPCMaxStepCmd->SetGuidance("Set the maximum step size in the TPC gas");
+  fTPCMaxStepCmd->SetParameterName("TPCMaxStep", false);
+  fTPCMaxStepCmd->SetUnitCategory("Length");
+  fTPCMaxStepCmd->SetRange("TPCMaxStep>0.");
+  fTPCMaxStepCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -251,6 +259,7 @@ DetectorMessenger::~DetectorMessenger()
   delete fLArEnableMuonWindowCmd;
   delete fLArMuonWindowThicknessCmd;
   delete fPressureCmd;
+  delete fTPCMaxStepCmd;
   delete fDetectorDir;
 }
 
@@ -345,5 +354,8 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
   }
   else if (command == fPressureCmd) {
     fDetector->SetPressure(fPressureCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fTPCMaxStepCmd) {
+    fDetector->SetTPCMaxStep(fTPCMaxStepCmd->GetNewDoubleValue(newValue));
   }
 }

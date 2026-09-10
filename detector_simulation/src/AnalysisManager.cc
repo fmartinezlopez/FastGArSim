@@ -25,7 +25,8 @@ AnalysisManager* AnalysisManager::GetInstance()
 // Constructor
 AnalysisManager::AnalysisManager()
 : fOutputFileName("output"),
-  fEnergyCut(0.001*MeV),
+  fTPCEnergyCut(0.0),
+  fCaloEnergyCut(0.001*MeV),
   fCurrentEvent(nullptr),
   fCurrentEventID(-1),
   fRootFile(nullptr),
@@ -262,7 +263,7 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
 {
   // Skip if no energy was deposited
   G4double edep = step->GetTotalEnergyDeposit();
-  if (edep <= fEnergyCut) return;
+  if (edep <= 0.) return;
   
   // Get volume information
   G4VPhysicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
@@ -298,14 +299,17 @@ void AnalysisManager::RecordEnergyDeposit(const G4Step* step)
   // Record hit based on volume
   if (volumeName.find("TPCGas") != std::string::npos) {
     // This is a TPC hit
+    if (edep <= fTPCEnergyCut) return;
     AddTPCHit(track, position, edep, stepSize);
   }
   else if (volumeName.find("ECal") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is an ECal hit
+    if (edep <= fCaloEnergyCut) return;
     AddECalHit(track, position, time, edep, segmentIndex, layerIndex, detID);
   }
   else if (volumeName.find("MuID") != std::string::npos && volumeName.find("Scintillator") != std::string::npos) {
     // This is a MuID hit
+    if (edep <= fCaloEnergyCut) return;
     AddMuIDHit(track, position, time, edep, segmentIndex, layerIndex, detID);
   }
 }
@@ -440,10 +444,16 @@ void AnalysisManager::WriteEvent(const Event& g4Event)
   }
 }
 
-void AnalysisManager::SetEnergyCut(G4double cut)
+void AnalysisManager::SetTPCEnergyCut(G4double cut)
 {
-    fEnergyCut = cut;
-    G4cout << "Energy cut set to " << fEnergyCut/MeV << " MeV" << G4endl;
+    fTPCEnergyCut = cut;
+    G4cout << "TPC energy cut set to " << fTPCEnergyCut/MeV << " MeV" << G4endl;
+}
+
+void AnalysisManager::SetCaloEnergyCut(G4double cut)
+{
+    fCaloEnergyCut = cut;
+    G4cout << "Calorimeter energy cut set to " << fCaloEnergyCut/MeV << " MeV" << G4endl;
 }
 
 void AnalysisManager::DefineCommands()
@@ -451,5 +461,8 @@ void AnalysisManager::DefineCommands()
     // Initialize messenger for macro commands
     fMessenger = new G4GenericMessenger(this, "/analysis/", "Analysis manager commands");
 
-    fMessenger->DeclarePropertyWithUnit("EnergyCut", "MeV", fEnergyCut, "Set energy cut");
+    fMessenger->DeclarePropertyWithUnit("TPCEnergyCut", "MeV", fTPCEnergyCut,
+                                        "Set the energy threshold for recording TPC gas hits");
+    fMessenger->DeclarePropertyWithUnit("CaloEnergyCut", "MeV", fCaloEnergyCut,
+                                        "Set the energy threshold for recording ECal and MuID hits");
 }
