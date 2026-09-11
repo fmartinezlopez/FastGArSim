@@ -8,8 +8,8 @@
 //
 // The awkward part is that a macro's entry function has default arguments, and
 // default arguments are not part of a function's type. Taking a pointer to
-// EventToNtupleConverter would give a three-argument function with no way to
-// recover the "Events" default. So the generated main() wraps the call in a
+// MakeNtuple would give a five-argument function with no way to recover the
+// defaults. So the generated main() wraps the call in a
 // generic lambda instead: inside it the call is written out normally, which is
 // what makes the compiler apply the defaults. app::Run() then asks, at compile
 // time, which argument counts that lambda actually accepts, and calls it with

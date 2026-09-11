@@ -26,10 +26,17 @@ bool MacroParser::ParseFile(const std::string& filename)
 
     std::cout << "\n Parsing macro file: " << filename << std::endl;
 
+    fPath = filename;
+    fText.clear();
+
     std::string line;
     int lineNumber = 0;
     while (std::getline(file, line)) {
         lineNumber++;
+        // Kept verbatim, so that the output file can say exactly how it was
+        // configured rather than only which file was pointed at
+        fText += line;
+        fText += "\n";
         ProcessLine(line);
     }
 
@@ -160,5 +167,18 @@ std::string MacroParser::GetGlobalParameter(const std::string& key, const std::s
     if (it != fGlobalParameters.end()) {
         return it->second;
     }
+    return defaultValue;
+}
+
+bool MacroParser::GetGlobalParameterBool(const std::string& key, bool defaultValue) const
+{
+    const std::string value = GetGlobalParameter(key, "");
+    if (value.empty()) return defaultValue;
+
+    if (value == "true"  || value == "True"  || value == "TRUE"  || value == "1") return true;
+    if (value == "false" || value == "False" || value == "FALSE" || value == "0") return false;
+
+    std::cerr << "Warning: '" << value << "' is not a yes or no answer for /reco/global/"
+              << key << "; using " << (defaultValue ? "true" : "false") << "." << std::endl;
     return defaultValue;
 }

@@ -66,10 +66,9 @@ fastgarsim_copy_files(DESTINATION macros
                             macros/vis.mac)
 
 #----------------------------------------------------------------------------
-# Copy the ROOT utility macros to the build directory
+# Copy the ROOT utility macros to the build directory.
 fastgarsim_copy_files(DESTINATION .
-                      FILES utils/EventToNtupleConverter.C
-                            utils/GeoVis.C)
+                      FILES utils/GeoVis.C)
 
 #----------------------------------------------------------------------------
 # One command line tool per macro in utils/, named after the macro. Adding a

@@ -42,6 +42,8 @@ Build options and environment setup are in the
 GArReconstruction -i <input_simulation.root> -m <config.mac> -o <output_reconstruction.root>
 ```
 
+The output is a copy of the input with a `Reco` tree added to it, so `<output>` holds `Events`, `Geometry` and `Reco` together — see [Output Structure](#output-structure). Leave `-o` out and it is named after the input, `sim.root` becoming `sim_reco.root`.
+
 ### Where the macros are looked up
 
 The configuration macros are copied next to the executable at build time, and `GArReconstruction` searches for the `-m` argument in
@@ -62,7 +64,7 @@ GArReconstruction -i sim.root -m ecal_digi.mac        -o out.root
 
 - `-i <file>` : Input ROOT file from detector simulation (required)
 - `-m <file>` : Macro file for reconstruction configuration (required)
-- `-o <file>` : Output ROOT file (default: `reconstruction_output.root`)
+- `-o <file>` : Output ROOT file (default: the input name with `_reco` before `.root`)
 - `-h, --help` : Show help message
 
 ## Configuration Macros
@@ -170,9 +172,36 @@ The pad plane radius and the drift length come from the `Geometry` tree; everyth
 
 ## Output Structure
 
-The reconstruction creates a ROOT file with a `RecoTree` containing one entry per event.
+By default the output file starts life as a copy of the input, with a `Reco` tree added to it. The result therefore holds the simulation's `Events` and `Geometry` trees alongside the reconstruction's own products, and an analysis needs one file rather than two that have to be kept in step by hand. Put
 
-### ECalDigiModule Output Branches
+```
+/reco/global/copyInput false
+```
+
+in the macro to write the products on their own instead; that saves the disk the copy costs, at the price of having to carry the simulation file along with the result. Re-running the reconstruction on a file that already has a `Reco` tree replaces that tree — the earlier pass's products are gone, though both passes stay in the file's history. Two module sets therefore have to be listed in one macro to end up in one file; a second pass does not add to the first.
+
+`Reco` has one entry per event, aligned entry by entry with `Events`.
+
+Two more trees describe the file:
+
+- `Schema` — one entry per branch of every tree in the file: its C++ type, the module instance that produced it, and the parameters that module was given
+- `Provenance` — one entry per reconstruction pass: when it ran, on what input, and the configuration macro verbatim
+
+They exist because the module set is not fixed: which products a file holds depends on how the reconstruction was configured, and the file is the only place that can say. `DumpSchema output.root` prints them, and the analysis framework reads them to report a missing product at start-up rather than mid-loop. They are plain `std::string` branches, so uproot reads them without a dictionary.
+
+Products are attributed to modules automatically — the manager watches the output tree either side of each module's `Initialize()` — so a new module needs no extra code to appear in the record.
+
+### Global settings
+
+| Command | Default | Effect |
+| --- | --- | --- |
+| `/reco/global/inputTreeName` | `Events` | Tree to read from the input file |
+| `/reco/global/outputTreeName` | `Reco` | Tree the products are written to |
+| `/reco/global/copyInput` | `true` | Start the output as a copy of the input |
+
+### Product branches
+
+#### ECalDigiModule
 
 - **`ECalTileDigiHits`** (`std::vector<digi::TileDigiHit>`) — digitized hits in HG (fine-granularity tile) layers:
   - `segment`, `layer`, `row`, `col` — readout channel address
@@ -192,7 +221,7 @@ The reconstruction creates a ROOT file with a `RecoTree` containing one entry pe
   - `trueEnergy` — true deposited energy [MeV]
   - `trackIDs`, `trackFractions` — contributing track IDs and their energy fractions
 
-### TPCDigiModule Output Branches
+#### TPCDigiModule
 
 - **`TPCWaveforms`** (`std::vector<digi::TPCWaveform>`) — one zero-suppressed waveform per region of interest, written only when `writeWaveforms` is set:
   - `channel`, `plane`, `row`, `col` — readout channel address (`plane` 0 = `+z` end, 1 = `-z` end)
@@ -202,7 +231,7 @@ The reconstruction creates a ROOT file with a `RecoTree` containing one entry pe
   - `trueEnergy` — true deposited energy per sample [MeV]
   - `trackIDs`, `trackFractions` — contributing track IDs and their energy fractions
 
-### TPCHitFinderModule Output Branches
+#### TPCHitFinderModule
 
 - **`TPCHits`** (`std::vector<digi::TPCHit>`) — one hit per charge pulse:
   - `channel`, `plane`, `row`, `col` — readout channel address
@@ -214,7 +243,7 @@ The reconstruction creates a ROOT file with a `RecoTree` containing one entry pe
   - `startTick`, `endTick` — tick range of the pulse
   - `trueEnergy`, `trackIDs`, `trackFractions` — MC truth
 
-### TPCClusterModule Output Branches
+#### TPCClusterModule
 
 - **`TPCClusters`** (`std::vector<digi::TPCCluster>`) — one entry per group of hits:
   - `clusterID`, `plane`, `nHits` — `plane` is -1 if the hits span both drift volumes
@@ -230,17 +259,26 @@ Data type definitions are in [common/include/DigiDataTypes.hh](../common/include
 
 ## Analysis
 
-Example ROOT macro for plotting ECalDigiModule output. It needs `libDigiDataDict` and
-the `common/` headers, which is what sourcing the build environment provides:
+The compiled analysis framework in [analysis/](../analysis/) reads reconstruction products directly, asking for them by name. That is the route for anything beyond a quick look.
+
+For a quick look, these example macros plot the digitization output. They need `libDigiDataDict` and the `common/` headers, which is what sourcing the build environment provides:
 
 ```bash
 ECalDigiAnalysis reco_output.root
+TPCRecoAnalysis tpc_reco.root
 ```
 
-The same for the TPC output:
+To see what a file holds before writing anything:
 
 ```bash
-TPCRecoAnalysis tpc_reco.root
+DumpSchema tpc_reco.root            # products, types and producing modules
+DumpSchema tpc_reco.root true       # and the macros that produced them
+```
+
+To read the products from python, flatten them first:
+
+```bash
+MakeNtuple tpc_reco.root ntuple.root
 ```
 
 ## Directory Structure
@@ -292,18 +330,21 @@ reconstruction/
 3. **ModuleFactory** — singleton registry; modules self-register at program startup via a static initializer
 4. **RecoStore** — key-value store for passing objects between modules within an event
 5. **MacroParser** — reads the configuration macro and instantiates modules
+6. **ProductSchema** ([common/](../common/include/ProductSchema.hh)) — the record of what the output file holds and how it was made, written by the manager and read by the analysis
 
 ### Data Flow
 
 ```
-Input ROOT File → RecoManager → Module::Initialize()
-                                ↓
-                 For each event: Module::Execute()
-                                 → Fill output tree
-                                ↓
-                                Module::Finalize()
-                                ↓
-                             Output ROOT File
+Input ROOT File → copied to the output → RecoManager → Module::Initialize()
+                  (Events, Geometry)                    ↓        (branches booked
+                                        For each event: Module::Execute()   here are
+                                                        → Fill the Reco tree  attributed
+                                                       ↓                      to the module)
+                                                       Module::Finalize()
+                                                       ↓
+                                        Schema + Provenance written
+                                                       ↓
+                     Output ROOT File: Events, Geometry, Reco, Schema, Provenance
 ```
 
 ## Adding a New Reconstruction Module

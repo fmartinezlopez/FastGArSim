@@ -124,6 +124,7 @@ Configure the detector geometry parameters:
 /detector/TPCRadius 260 cm
 /detector/TPCLength 500 cm
 /detector/GasPressure 10.0 bar
+/detector/TPCMaxStep 1.0 mm
 /detector/BField 0.5 tesla
 
 # ECal absorber and scintillator materials
@@ -160,8 +161,18 @@ Select physics models and production cuts:
 
 ```
 /run/OutputFileName output_name
-/analysis/EnergyCut 0.001 MeV  # Energy threshold for recording hits
+/analysis/TPCEnergyCut 0.0 MeV     # Energy threshold for recording TPC gas hits
+/analysis/CaloEnergyCut 0.001 MeV  # Energy threshold for recording ECal and MuID hits
 ```
+
+The two thresholds are deliberately different.
+
+### Stepping in the TPC Gas
+
+`/detector/TPCMaxStep` sets the maximum step length in the gas volume, and therefore the granularity of the energy deposits handed to the drift simulation. The gas is thin enough that Geant4's own step limits are of order metres for a GeV-scale track, so without an explicit limit a particle crosses the whole TPC in a handful of steps. The total energy
+loss is still correct, but the deposits are far too sparse to seed drift.
+
+A limit of 1--2 mm is a sensible default: pads are a few mm across and transverse diffusion over the full drift is itself of that order, so finer stepping costs CPU and output size without buying resolution.
 
 ### Multi-threading
 
@@ -206,29 +217,12 @@ The simulation writes a ROOT file containing two TTrees:
 
 The data types are defined in [common/include/SimDataTypes.hh](../common/include/SimDataTypes.hh) and shared between the simulation and the reconstruction.
 
-### Ntuple Maker
+### Flat ntuples
 
-The object-based `Events` TTree is not directly suited for event-loop analyses. The macro [utils/EventToNtupleConverter.C](utils/EventToNtupleConverter.C) converts it into a flat ntuple that is easier to work with.
-
-**Usage:**
-
-The ntuple maker is also built as an executable, installed into `bin`. Run it from the shell as:
+The `Events` tree holds objects, which the analysis framework reads directly — see the [analysis README](../analysis/README.md). For reading the output outside that framework, from uproot or a bare ROOT session, [common/utils/MakeNtuple.C](../common/utils/MakeNtuple.C) converts any FastGArSim file into flat `std::vector` branches:
 
 ```bash
-EventToNtupleConverter input.root output_ntuple.root
+MakeNtuple simulation.root ntuple.root
 ```
 
-The converter produces a file with two TTrees:
-
-- **`AnaTree`** — one entry per event, with all data stored as flat `std::vector` branches (indexed by particle or hit):
-  - Particle identity: `eventID`, `trackID`, `pdgCode`, `motherID`, `creatorProcess`, `endProcess`
-  - Trajectory endpoints: `startX/Y/Z`, `endX/Y/Z` [cm] and `startPX/Y/Z`, `endPX/Y/Z` [MeV/c]
-  - TPC hits: `tpcHitTrackID`, `tpcHitIsSec`, `tpcHitX/Y/Z`, `tpcHitEdep`, `tpcHitStepSize`
-  - ECal hits: `ecalHitTrackID`, `ecalHitIsSec`, `ecalHitX/Y/Z`, `ecalHitTime`, `ecalHitEdep`, `ecalHitSegment`, `ecalHitLayer`, `ecalHitDetID`
-  - MuID hits: `muidHitTrackID`, `muidHitIsSec`, `muidHitX/Y/Z`, `muidHitTime`, `muidHitEdep`, `muidHitSegment`, `muidHitLayer`, `muidHitDetID`
-
-  The `*IsSec` flag distinguishes direct hits from hits accumulated from unrecorded secondaries. All hit vectors include both primary and secondary contributions tagged accordingly.
-
-- **`GeoTree`** — a copy of the `Geometry` tree from the simulation file, renamed for consistency.
-
-This flat ntuple is the expected input format for the analysis macros in [analysis/](../analysis/).
+Nothing in it is specific to the simulation: the columns are worked out from the ROOT dictionaries of whatever the file contains, so the same tool flattens reconstruction output with any set of modules. It writes one flat tree per input tree, keeping the names, and a `Schema` tree recording which column came from which branch. See the [main README](../README.md) for the naming rule and the options.

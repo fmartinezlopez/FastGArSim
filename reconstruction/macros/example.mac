@@ -1,9 +1,19 @@
 # Example macro for GArReconstruction
 #
-# Set the TTree name inside the input ROOT file.
-# For detector_simulation direct output: "Events" (default)
-# For converted ntuples (EventToNtupleConverter): "AnaTree"
+# Set the TTree name inside the input ROOT file, as written by
+# detector_simulation. This is the default, so the line is only needed when
+# reading something else.
 /reco/global/inputTreeName Events
+
+# Name of the tree the reconstruction writes. The default is "Reco".
+#/reco/global/outputTreeName Reco
+
+# By default the output file starts life as a copy of the input, so that the
+# result holds Events, Geometry and Reco together and an analysis needs one
+# file rather than two kept in step by hand. Set this false to write only the
+# reconstruction products, at the cost of having to carry the simulation file
+# alongside; it is worth doing when the input is large and disk is short.
+#/reco/global/copyInput false
 
 # Modules are added in the order they will execute.
 # At startup the framework checks that every module's declared inputs are

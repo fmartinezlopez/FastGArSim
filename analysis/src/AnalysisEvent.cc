@@ -56,31 +56,6 @@ private:
     std::vector<std::string> fMissing;
 };
 
-// Safe element access for the optional vector branches
-template <typename T>
-T Element(const std::vector<T>* v, size_t i, T fallback = T())
-{
-    return (v && i < v->size()) ? v->at(i) : fallback;
-}
-
-TVector3 MakeVector(const std::vector<Float_t>* vx,
-                    const std::vector<Float_t>* vy,
-                    const std::vector<Float_t>* vz,
-                    size_t i)
-{
-    return TVector3(Element<Float_t>(vx, i), Element<Float_t>(vy, i), Element<Float_t>(vz, i));
-}
-
-Double_t SumOver(const std::vector<size_t>& indices, const std::vector<Float_t>* values)
-{
-    if (!values) return 0.;
-    Double_t sum = 0.;
-    for (size_t i : indices) {
-        if (i < values->size()) sum += values->at(i);
-    }
-    return sum;
-}
-
 } // anonymous namespace
 
 /* -------------------------------------------------------------------------- */
@@ -127,150 +102,269 @@ void GenieEvent::Connect(TTree* tree)
 /*                                  SimEvent                                  */
 /* -------------------------------------------------------------------------- */
 
-void SimEvent::Connect(TTree* tree)
+namespace {
+
+// Gather one sub-detector's hits from every particle into a flat list. The
+// order is the one an analysis expects when it walks the particles itself:
+// particle by particle, each particle's own hits before its secondaries'.
+template <class Hit>
+void FillView(const root::Event* event,
+              const std::vector<Hit> root::Particle::* primary,
+              const std::vector<Hit> root::Particle::* secondary,
+              HitView<Hit>& view)
+{
+    view.hits.clear();
+    view.trackIDs.clear();
+    view.secondary.clear();
+    view.byTrack.clear();
+    view.built = kTRUE;
+
+    if (!event) return;
+
+    // One pass to size the vectors, so the pointers gathered below are not
+    // moved about while the second pass is taking them
+    size_t total = 0;
+    for (const root::Particle& particle : event->particles) {
+        total += (particle.*primary).size() + (particle.*secondary).size();
+    }
+    view.hits.reserve(total);
+    view.trackIDs.reserve(total);
+    view.secondary.reserve(total);
+
+    for (const root::Particle& particle : event->particles) {
+        for (const Hit& hit : particle.*primary) {
+            view.byTrack[particle.trackID].push_back(view.hits.size());
+            view.hits.push_back(&hit);
+            view.trackIDs.push_back(particle.trackID);
+            view.secondary.push_back(kFALSE);
+        }
+        for (const Hit& hit : particle.*secondary) {
+            view.byTrack[particle.trackID].push_back(view.hits.size());
+            view.hits.push_back(&hit);
+            view.trackIDs.push_back(particle.trackID);
+            view.secondary.push_back(kTRUE);
+        }
+    }
+}
+
+// Element access that returns a harmless default rather than reading past the
+// end, matching how the flat-ntuple reader behaved
+template <class T>
+T At(const std::vector<T>& values, size_t i, T fallback = T())
+{
+    return (i < values.size()) ? values[i] : fallback;
+}
+
+TVector3 PointToVector(const root::TrajectoryPoint& point)
+{
+    return TVector3(point.x, point.y, point.z);
+}
+
+TVector3 PointToVector(const root::MomentumPoint& point)
+{
+    return TVector3(point.x, point.y, point.z);
+}
+
+template <class Hit>
+Double_t SumEdep(const HitView<Hit>& view, const std::vector<size_t>& indices)
+{
+    Double_t sum = 0.;
+    for (const size_t i : indices) {
+        if (i < view.hits.size()) sum += view.hits[i]->energyDeposit;
+    }
+    return sum;
+}
+
+} // anonymous namespace
+
+void SimEvent::Connect(TTree* tree, const char* branchName)
 {
     if (!tree) return;
 
-    BranchConnector connect(tree, "FastGArSim AnaTree");
+    if (!tree->GetBranch(branchName)) {
+        std::cout << "Warning: tree '" << tree->GetName() << "' has no '"
+                  << branchName << "' branch; the simulation record will be empty."
+                  << std::endl;
+        return;
+    }
 
-    connect("eventID", &eventID);
-
-    // Particle properties
-    connect("trackID",        &trackID);
-    connect("pdgCode",        &pdgCode);
-    connect("motherID",       &motherID);
-    connect("creatorProcess", &creatorProcess);
-    connect("endProcess",     &endProcess);
-
-    // Start and end trajectory points
-    connect("startX", &startX);
-    connect("startY", &startY);
-    connect("startZ", &startZ);
-    connect("endX",   &endX);
-    connect("endY",   &endY);
-    connect("endZ",   &endZ);
-
-    // Initial and final momenta
-    connect("startPX", &startPX);
-    connect("startPY", &startPY);
-    connect("startPZ", &startPZ);
-    connect("endPX",   &endPX);
-    connect("endPY",   &endPY);
-    connect("endPZ",   &endPZ);
-
-    // TPC hits
-    connect("tpcHitTrackID",  &tpcHitTrackID);
-    connect("tpcHitIsSec",    &tpcHitIsSec);
-    connect("tpcHitX",        &tpcHitX);
-    connect("tpcHitY",        &tpcHitY);
-    connect("tpcHitZ",        &tpcHitZ);
-    connect("tpcHitEdep",     &tpcHitEdep);
-    connect("tpcHitStepSize", &tpcHitStepSize);
-
-    // ECal hits
-    connect("ecalHitTrackID", &ecalHitTrackID);
-    connect("ecalHitIsSec",   &ecalHitIsSec);
-    connect("ecalHitX",       &ecalHitX);
-    connect("ecalHitY",       &ecalHitY);
-    connect("ecalHitZ",       &ecalHitZ);
-    connect("ecalHitTime",    &ecalHitTime);
-    connect("ecalHitEdep",    &ecalHitEdep);
-    connect("ecalHitSegment", &ecalHitSegment);
-    connect("ecalHitLayer",   &ecalHitLayer);
-    connect("ecalHitDetID",   &ecalHitDetID);
-
-    // MuID hits
-    connect("muidHitTrackID", &muidHitTrackID);
-    connect("muidHitIsSec",   &muidHitIsSec);
-    connect("muidHitX",       &muidHitX);
-    connect("muidHitY",       &muidHitY);
-    connect("muidHitZ",       &muidHitZ);
-    connect("muidHitTime",    &muidHitTime);
-    connect("muidHitEdep",    &muidHitEdep);
-    connect("muidHitSegment", &muidHitSegment);
-    connect("muidHitLayer",   &muidHitLayer);
-    connect("muidHitDetID",   &muidHitDetID);
+    tree->SetBranchAddress(branchName, &event);
 }
 
 void SimEvent::Update()
 {
+    eventID = event ? event->eventID : 0;
+
+    fTPC.built = kFALSE;
+    fECal.built = kFALSE;
+    fMuID.built = kFALSE;
     fTrackIndexValid = kFALSE;
-    fTPCMapValid = kFALSE;
-    fECalMapValid = kFALSE;
-    fMuIDMapValid = kFALSE;
 }
 
-TVector3 SimEvent::StartPosition(size_t i) const { return MakeVector(startX, startY, startZ, i); }
-TVector3 SimEvent::EndPosition(size_t i) const { return MakeVector(endX, endY, endZ, i); }
-TVector3 SimEvent::StartMomentum(size_t i) const { return MakeVector(startPX, startPY, startPZ, i); }
-TVector3 SimEvent::EndMomentum(size_t i) const { return MakeVector(endPX, endPY, endPZ, i); }
+/* ------------------------------- Particles ------------------------------- */
 
-TVector3 SimEvent::TPCHitPosition(size_t i) const { return MakeVector(tpcHitX, tpcHitY, tpcHitZ, i); }
-TVector3 SimEvent::ECalHitPosition(size_t i) const { return MakeVector(ecalHitX, ecalHitY, ecalHitZ, i); }
-TVector3 SimEvent::MuIDHitPosition(size_t i) const { return MakeVector(muidHitX, muidHitY, muidHitZ, i); }
+Int_t SimEvent::TrackID(size_t i) const
+{
+    return (i < NParticles()) ? event->particles[i].trackID : -1;
+}
+
+Int_t SimEvent::PdgCode(size_t i) const
+{
+    return (i < NParticles()) ? event->particles[i].pdgCode : 0;
+}
+
+Int_t SimEvent::MotherID(size_t i) const
+{
+    return (i < NParticles()) ? event->particles[i].motherID : -1;
+}
+
+std::string SimEvent::CreatorProcess(size_t i) const
+{
+    return (i < NParticles()) ? event->particles[i].creatorProcess.Data() : std::string();
+}
+
+std::string SimEvent::EndProcess(size_t i) const
+{
+    return (i < NParticles()) ? event->particles[i].endProcess.Data() : std::string();
+}
+
+Bool_t SimEvent::HasTrajectory(size_t i) const
+{
+    return i < NParticles() && !event->particles[i].trajectory.points.empty();
+}
+
+TVector3 SimEvent::StartPosition(size_t i) const
+{
+    if (!HasTrajectory(i)) return TVector3();
+    return PointToVector(event->particles[i].trajectory.points.front());
+}
+
+TVector3 SimEvent::EndPosition(size_t i) const
+{
+    if (!HasTrajectory(i)) return TVector3();
+    return PointToVector(event->particles[i].trajectory.points.back());
+}
+
+TVector3 SimEvent::StartMomentum(size_t i) const
+{
+    if (i >= NParticles()) return TVector3();
+    const auto& points = event->particles[i].trajectory.mom_points;
+    if (points.empty()) return TVector3();
+    return PointToVector(points.front());
+}
+
+TVector3 SimEvent::EndMomentum(size_t i) const
+{
+    if (i >= NParticles()) return TVector3();
+    const auto& points = event->particles[i].trajectory.mom_points;
+    if (points.empty()) return TVector3();
+    return PointToVector(points.back());
+}
+
+/* ---------------------------------- Hits --------------------------------- */
+
+const HitView<root::TPCHit>& SimEvent::TPCView() const
+{
+    if (!fTPC.built) {
+        FillView(event, &root::Particle::tpcHits, &root::Particle::sec_tpcHits, fTPC);
+    }
+    return fTPC;
+}
+
+const HitView<root::ECalHit>& SimEvent::ECalView() const
+{
+    if (!fECal.built) {
+        FillView(event, &root::Particle::ecalHits, &root::Particle::sec_ecalHits, fECal);
+    }
+    return fECal;
+}
+
+const HitView<root::MuIDHit>& SimEvent::MuIDView() const
+{
+    if (!fMuID.built) {
+        FillView(event, &root::Particle::muidHits, &root::Particle::sec_muidHits, fMuID);
+    }
+    return fMuID;
+}
+
+size_t SimEvent::NTPCHits()  const { return TPCView().hits.size(); }
+size_t SimEvent::NECalHits() const { return ECalView().hits.size(); }
+size_t SimEvent::NMuIDHits() const { return MuIDView().hits.size(); }
+
+const root::TPCHit&  SimEvent::TPCHit(size_t k)  const { return *TPCView().hits[k]; }
+const root::ECalHit& SimEvent::ECalHit(size_t k) const { return *ECalView().hits[k]; }
+const root::MuIDHit& SimEvent::MuIDHit(size_t k) const { return *MuIDView().hits[k]; }
+
+TVector3 SimEvent::TPCHitPosition(size_t k) const
+{
+    const HitView<root::TPCHit>& view = TPCView();
+    if (k >= view.hits.size()) return TVector3();
+    return TVector3(view.hits[k]->x, view.hits[k]->y, view.hits[k]->z);
+}
+
+TVector3 SimEvent::ECalHitPosition(size_t k) const
+{
+    const HitView<root::ECalHit>& view = ECalView();
+    if (k >= view.hits.size()) return TVector3();
+    return TVector3(view.hits[k]->x, view.hits[k]->y, view.hits[k]->z);
+}
+
+TVector3 SimEvent::MuIDHitPosition(size_t k) const
+{
+    const HitView<root::MuIDHit>& view = MuIDView();
+    if (k >= view.hits.size()) return TVector3();
+    return TVector3(view.hits[k]->x, view.hits[k]->y, view.hits[k]->z);
+}
+
+Int_t SimEvent::TPCHitTrackID(size_t k)  const { return At(TPCView().trackIDs,  k, Int_t(-1)); }
+Int_t SimEvent::ECalHitTrackID(size_t k) const { return At(ECalView().trackIDs, k, Int_t(-1)); }
+Int_t SimEvent::MuIDHitTrackID(size_t k) const { return At(MuIDView().trackIDs, k, Int_t(-1)); }
+
+Bool_t SimEvent::TPCHitIsSecondary(size_t k)  const { return At(TPCView().secondary,  k, kFALSE); }
+Bool_t SimEvent::ECalHitIsSecondary(size_t k) const { return At(ECalView().secondary, k, kFALSE); }
+Bool_t SimEvent::MuIDHitIsSecondary(size_t k) const { return At(MuIDView().secondary, k, kFALSE); }
+
+/* ------------------------------ Track lookups ---------------------------- */
 
 Int_t SimEvent::IndexOfTrack(Int_t id) const
 {
     if (!fTrackIndexValid) {
         fTrackIndex.clear();
-        if (trackID) {
-            for (size_t i = 0; i < trackID->size(); ++i) {
-                fTrackIndex.emplace(trackID->at(i), static_cast<Int_t>(i));
-            }
+        for (size_t i = 0; i < NParticles(); ++i) {
+            fTrackIndex.emplace(event->particles[i].trackID, static_cast<Int_t>(i));
         }
         fTrackIndexValid = kTRUE;
     }
 
-    auto it = fTrackIndex.find(id);
+    const auto it = fTrackIndex.find(id);
     return (it == fTrackIndex.end()) ? -1 : it->second;
 }
 
-void SimEvent::BuildHitMap(const std::vector<Int_t>* ids, HitIndexMap& map)
-{
-    map.clear();
-    if (!ids) return;
-    for (size_t i = 0; i < ids->size(); ++i) {
-        map[ids->at(i)].push_back(i);
-    }
-}
-
-const std::vector<size_t>& SimEvent::Lookup(const HitIndexMap& map, Int_t id)
+const std::vector<size_t>& SimEvent::Lookup(
+    const std::unordered_map<Int_t, std::vector<size_t>>& map, Int_t id)
 {
     static const std::vector<size_t> kEmpty;
-    auto it = map.find(id);
+    const auto it = map.find(id);
     return (it == map.end()) ? kEmpty : it->second;
 }
 
 const std::vector<size_t>& SimEvent::TPCHitsOfTrack(Int_t id) const
-{
-    if (!fTPCMapValid) {
-        BuildHitMap(tpcHitTrackID, fTPCHitsByTrack);
-        fTPCMapValid = kTRUE;
-    }
-    return Lookup(fTPCHitsByTrack, id);
-}
+{ return Lookup(TPCView().byTrack, id); }
 
 const std::vector<size_t>& SimEvent::ECalHitsOfTrack(Int_t id) const
-{
-    if (!fECalMapValid) {
-        BuildHitMap(ecalHitTrackID, fECalHitsByTrack);
-        fECalMapValid = kTRUE;
-    }
-    return Lookup(fECalHitsByTrack, id);
-}
+{ return Lookup(ECalView().byTrack, id); }
 
 const std::vector<size_t>& SimEvent::MuIDHitsOfTrack(Int_t id) const
-{
-    if (!fMuIDMapValid) {
-        BuildHitMap(muidHitTrackID, fMuIDHitsByTrack);
-        fMuIDMapValid = kTRUE;
-    }
-    return Lookup(fMuIDHitsByTrack, id);
-}
+{ return Lookup(MuIDView().byTrack, id); }
 
-Double_t SimEvent::TPCEdepOfTrack(Int_t id) const { return SumOver(TPCHitsOfTrack(id), tpcHitEdep); }
-Double_t SimEvent::ECalEdepOfTrack(Int_t id) const { return SumOver(ECalHitsOfTrack(id), ecalHitEdep); }
-Double_t SimEvent::MuIDEdepOfTrack(Int_t id) const { return SumOver(MuIDHitsOfTrack(id), muidHitEdep); }
+Double_t SimEvent::TPCEdepOfTrack(Int_t id) const
+{ return SumEdep(TPCView(), TPCHitsOfTrack(id)); }
+
+Double_t SimEvent::ECalEdepOfTrack(Int_t id) const
+{ return SumEdep(ECalView(), ECalHitsOfTrack(id)); }
+
+Double_t SimEvent::MuIDEdepOfTrack(Int_t id) const
+{ return SumEdep(MuIDView(), MuIDHitsOfTrack(id)); }
 
 /* -------------------------------------------------------------------------- */
 /*                                GeometryInfo                                */
@@ -280,7 +374,7 @@ void GeometryInfo::Connect(TTree* tree)
 {
     if (!tree) return;
 
-    BranchConnector connect(tree, "FastGArSim GeoTree");
+    BranchConnector connect(tree, "FastGArSim Geometry");
 
     connect("geometry_type", &geometry_type);
 

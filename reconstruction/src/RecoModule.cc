@@ -7,7 +7,7 @@
 #include <sstream>
 
 RecoModule::RecoModule(const std::string& name)
-    : fName(name), fEnabled(true),
+    : fName(name), fType(name), fEnabled(true),
       fInputFile(nullptr), fInputTree(nullptr),
       fOutputTree(nullptr), fEvent(nullptr), fStore(nullptr)
 {

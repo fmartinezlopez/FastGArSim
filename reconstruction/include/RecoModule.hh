@@ -48,8 +48,17 @@ public:
     double      GetParameterDouble(const std::string& key, double defaultValue = 0.0) const;
     bool        GetParameterBool(const std::string& key, bool defaultValue = false) const;
 
-    // Getters
+    // Every parameter set on this module, for the file's schema record
+    const std::map<std::string, std::string>& GetParameters() const { return fParameters; }
+
+    // Identity. The name is the instance name from the macro and the type is
+    // the class the factory was asked for; the manager sets both, so a module
+    // constructor only has to supply a sensible default name.
     std::string GetName() const { return fName; }
+    void SetName(const std::string& name) { fName = name; }
+    std::string GetType() const { return fType; }
+    void SetType(const std::string& type) { fType = type; }
+
     bool IsEnabled() const { return fEnabled; }
     void SetEnabled(bool enabled) { fEnabled = enabled; }
 
@@ -62,6 +71,7 @@ public:
 
 protected:
     std::string fName;
+    std::string fType;
     bool fEnabled;
     std::map<std::string, std::string> fParameters;
 

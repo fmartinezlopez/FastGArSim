@@ -9,6 +9,10 @@
 #
 # Run with:
 #   GArReconstruction -i gar_simulation.root -m tpc_reco.mac -o tpc_reco.root
+#
+# The output starts as a copy of the input, so tpc_reco.root ends up holding
+# Events, Geometry and Reco, plus a Schema record of what is in it and how it
+# was made. Add /reco/global/copyInput false to write the products alone.
 
 # Input tree name in the simulation file (written by detector_simulation)
 /reco/global/inputTreeName Events

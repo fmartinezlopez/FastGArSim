@@ -4,10 +4,11 @@
 # Source this file to use a FastGArSim build from any directory:
 #
 #     source @FASTGARSIM_ENV_BUILD_DIR@/setup.sh
-#     root -l "$FASTGARSIM_ROOTLOGON" 'TruncatedDEDX.C("ntuple.root", "dedx.root")'
+#     GArAnalysis -a TruncatedDEDX.C -i sim.root -o dedx.root
 #
-# GArSimulation finds its run macros through FASTGARSIM_MACRO_PATH and its own
-# location, so it can be started from any directory:
+# GArSimulation, GArReconstruction and GArAnalysis find their macros through
+# FASTGARSIM_MACRO_PATH and their own location, so they can be started from any
+# directory:
 #
 #     GArSimulation -m macros/gun.mac    # batch
 #     GArSimulation -v                   # interactive viewer, runs macros/vis.mac
