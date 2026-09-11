@@ -50,22 +50,20 @@ PrimaryGeneratorMessenger::~PrimaryGeneratorMessenger()
 
 void PrimaryGeneratorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 {
+  // These only record the configuration. The generator itself is built from
+  // it later, once the whole macro has been read -- see ActionInitialization.
   if (command == fGeneratorTypeCmd) {
     fActionInitialization->SetGeneratorType(newValue);
-    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
   else if (command == fGenieFileNameCmd) {
     fActionInitialization->SetGenieFileName(newValue);
-    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
   else if (command == fNuWroFileNameCmd) {
     fActionInitialization->SetNuWroFileName(newValue);
-    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
   else if (command == fInitialEventCmd) {
     G4int value = G4UIcommand::ConvertToInt(newValue);
     G4cout << "Set initial event to " << value << G4endl;
     fActionInitialization->SetInitialEvent(value);
-    fActionInitialization->UpdatePrimaryGeneratorAction();
   }
 }
