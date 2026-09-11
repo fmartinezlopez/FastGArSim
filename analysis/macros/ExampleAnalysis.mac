@@ -1,0 +1,24 @@
+# ExampleAnalysis.mac -- job macro for ExampleAnalysis.C
+#
+# Run with:
+#   GArAnalysis -m ExampleAnalysis.mac -i sim.root -o example_out.root
+#
+# Everything here can be overridden on the command line, which is what -i and
+# -o do above. A job that sets /ana/global/input and /ana/global/output in the
+# macro instead needs nothing but -m.
+
+# --------------------------------------------------------------------------
+# The job: what to run, over what, and where it goes
+# --------------------------------------------------------------------------
+/ana/global/analysis      ExampleAnalysis.C
+/ana/global/outputTree    ECalClusters     # Name of the tree in the output file
+#/ana/global/input        sim.root         # Path, wildcard or comma-separated list
+#/ana/global/output       example_out.root
+#/ana/global/genie        genie.gst.root   # Only for GENIE samples
+#/ana/global/maxEvents    1000             # -1 (the default) is all of them
+
+# --------------------------------------------------------------------------
+# The analysis: DBSCAN clustering of the ECal barrel hits, layer by layer
+# --------------------------------------------------------------------------
+/ana/eps                  0.5    # Cluster radius [cm]
+/ana/minPts               5      # Neighbours a hit needs to be a core hit

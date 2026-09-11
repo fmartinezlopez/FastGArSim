@@ -26,9 +26,9 @@ void RecoExample(const char* filename = "reconstruction_output.root") {
     }
 
     // Get the reconstruction tree
-    TTree* tree = (TTree*)file->Get("RecoTree");
+    TTree* tree = (TTree*)file->Get("Reco");
     if (!tree) {
-        std::cerr << "Error: Cannot find RecoTree in file" << std::endl;
+        std::cerr << "Error: Cannot find the Reco tree in file" << std::endl;
         return;
     }
 
@@ -38,7 +38,7 @@ void RecoExample(const char* filename = "reconstruction_output.root") {
     std::vector<RecoCluster>* clusters = nullptr;
     std::vector<RecoVertex>* vertices = nullptr;
 
-    tree->SetBranchAddress("Event", &event);
+    tree->SetBranchAddress("RecoEvent", &event);
     tree->SetBranchAddress("Tracks", &tracks);
     tree->SetBranchAddress("Clusters", &clusters);
     tree->SetBranchAddress("Vertices", &vertices);

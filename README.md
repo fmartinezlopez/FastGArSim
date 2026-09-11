@@ -8,11 +8,20 @@ The detector is a cylindrical high-pressure gaseous argon TPC in a magnetic fiel
 
 | Stage | Package | Produces |
 | --- | --- | --- |
-| 1. Detector simulation | [detector_simulation/](detector_simulation/) | `Events` and `Geometry` trees, optionally convert to flat ntuples with `EventToNtupleConverter` |
-| 2. Reconstruction | [reconstruction/](reconstruction/) | `RecoTree` |
+| 1. Detector simulation | [detector_simulation/](detector_simulation/) | `Events` and `Geometry` trees |
+| 2. Reconstruction | [reconstruction/](reconstruction/) | a copy of its input with a `Reco` tree added, so the result holds `Events`, `Geometry` and `Reco` together |
 | 3. Analysis | [analysis/](analysis/) | Whatever your macro writes |
 
-The classes written to and read from these files are defined once, in [common/include/](common/include/), so that all three packages agree on them.
+The classes written to and read from these files are defined once, in [common/include/](common/include/), so that all three packages agree on them. The analysis reads them as they were written; there is no flat ntuple stage in between. [common/utils/MakeNtuple.C](common/utils/MakeNtuple.C) still produces one for reading outside the framework, from uproot or bare ROOT.
+
+### What a file says about itself
+
+The reconstruction is modular, so which products a file holds depends on which modules were run. Rather than leaving that to be remembered, every file it writes carries two extra trees describing itself:
+
+- `Schema` — one entry per branch: the tree it lives in, its C++ type, and the module that produced it with the parameters it was given
+- `Provenance` — one entry per processing pass: when it ran, on what input, and the configuration macro verbatim
+
+`DumpSchema file.root` prints both. Analyses use the same record to fail at start-up, naming what the file does hold, rather than part-way through an event loop. Simulation files and files written before this existed have no `Schema` tree; readers fall back to walking the trees, so nothing has to be regenerated.
 
 ## Repository structure
 
@@ -21,10 +30,14 @@ FastGArSim/
 ├── CMakeLists.txt              # Top-level build, selects the sub-packages
 ├── setup_fnal.sh               # Environment setup for the FNAL machines
 ├── cmake/                      # Shared CMake settings, helpers and templates
-├── common/                     # Data types shared by every package
-│   └── include/
-│       ├── SimDataTypes.hh     # Simulation output types
-│       └── DigiDataTypes.hh    # Digitization types
+├── common/                     # Shared data types and file-level utilities
+│   ├── include/
+│   │   ├── SimDataTypes.hh     # Simulation output types
+│   │   ├── DigiDataTypes.hh    # Digitization types
+│   │   ├── ProductSchema.hh    # What a file holds, and how it was made
+│   │   └── TreeFlattener.hh    # Object trees -> flat vector ntuples
+│   ├── src/                    # Their implementations (libGArCommon)
+│   └── utils/                  # MakeNtuple, DumpSchema
 ├── detector_simulation/        # Geant4 simulation
 │   ├── src/, include/          # Sources and headers
 │   ├── macros/                 # Run and configuration macros
@@ -78,7 +91,7 @@ cmake -DBUILD_SIMULATION=OFF ..
 | `COMPONENTS` | *(empty)* | Comma-separated list of sub-packages; overrides the `BUILD_*` options |
 | `BUILD_SIMULATION` | `ON` | Build `GArSimulation` |
 | `BUILD_RECONSTRUCTION` | `ON` | Build `GArReconstruction` |
-| `BUILD_ANALYSIS` | `ON` | Build `libGArAnalysis` |
+| `BUILD_ANALYSIS` | `ON` | Build `GArAnalysis` and `libGArAnalysis` |
 | `WITH_GEANT4_UIVIS` | `ON` | Build the simulation with the Geant4 UI and visualisation drivers |
 | `CMAKE_BUILD_TYPE` | `RelWithDebInfo` | Standard CMake build types |
 
@@ -98,10 +111,11 @@ The sub-packages keep their own subdirectory of the build tree, so the layout is
 build/
 ├── setup.sh                    # Environment for this build (generated)
 ├── rootlogon.C                 # Same, for ROOT sessions (generated)
-├── common/                     # libSimDataDict, libDigiDataDict + .pcm/.rootmap
-├── detector_simulation/        # GArSimulation, macros/, EventToNtupleConverter.C
+├── common/                     # libSimDataDict, libDigiDataDict + .pcm/.rootmap,
+│                               # libGArCommon, MakeNtuple, DumpSchema
+├── detector_simulation/        # GArSimulation, macros/, GeoVis.C
 ├── reconstruction/             # GArReconstruction, libRecoDataDict, macros/
-└── analysis/                   # libGArAnalysis, macros/
+└── analysis/                   # GArAnalysis, libGArAnalysis, macros/
 ```
 
 ## Setting up the environment
@@ -117,27 +131,34 @@ It also writes a `rootlogon.C`, which ROOT runs automatically when started from 
 
 ### Command line tools
 
-The macros that are batch tools are also built as executables, installed into `bin` and put on `PATH` by `setup.sh`. They take the macro's arguments positionally, so there is no ROOT invocation to quote and no environment to set up:
+The utility macros are also built as executables, installed into `bin` and put on `PATH` by `setup.sh`. They take the macro's arguments positionally, so there is no ROOT invocation to quote and no environment to set up:
 
 ```bash
-EventToNtupleConverter simulation.root ntuple.root
-TruncatedDEDX 'gun_*.root' dedx.root 0.1 5.
+MakeNtuple reco.root ntuple.root
 ECalDigiAnalysis reco.root
 ```
 
-The tools are discovered, not listed. Each package scans one directory and builds an executable per macro it finds, named after the macro with the `.C` dropped:
+These tools are discovered, not listed. Each package scans one directory and builds an executable per macro it finds, named after the macro with the `.C` dropped:
 
 | Directory scanned | Tools currently built |
 | --- | --- |
-| `detector_simulation/utils/` | `EventToNtupleConverter`, `GeoVis` |
+| `common/utils/` | `MakeNtuple`, `DumpSchema` |
+| `detector_simulation/utils/` | `GeoVis` |
 | `reconstruction/utils/` | `ECalDigiAnalysis`, `RecoExample`, `TPCRecoAnalysis` |
-| `analysis/macros/` | `ExampleAnalysis`, `TruncatedDEDX` |
 
 Dropping a new macro into one of those directories is all it takes to get a tool for it — no CMake edits. The macro's entry function has to share its file name, which is the convention ROOT already requires for `.x Macro.C`.
 
 Each tool takes `-h`/`--help`, which reports the argument count it accepts and the description taken from the macro's own header comment. Optional arguments default to whatever the macro declares, and anything that draws runs in batch mode and writes its canvases to file (set `FASTGARSIM_NO_BATCH` to override).
 
 A macro that only makes sense interactively, or that cannot be compiled, is named in the `EXCLUDE` list of its package's `fastgarsim_add_macro_apps()` call.
+
+The analyses in `analysis/macros/` work the other way round. They are not built at all: `GArAnalysis` takes one as an argument and compiles it when the job starts, the same way `GArSimulation` and `GArReconstruction` take a macro describing what to do:
+
+```bash
+GArAnalysis -a TruncatedDEDX.C -i 'gun_*.root' -o dedx.root -m TruncatedDEDX.mac
+```
+
+so writing an analysis needs no rebuild of anything, and a run always uses the macro as it stands at that moment. See the [analysis README](analysis/README.md#running-an-analysis).
 
 ### On the FNAL machines
 
@@ -166,20 +187,26 @@ source build/setup.sh
 # 1. Simulate. macros/nu.mac reads GENIE events, macros/gun.mac fires a particle gun
 GArSimulation -m macros/gun.mac
 
-# 2. Convert the object-based output to a flat ntuple
-EventToNtupleConverter output.root ntuple.root
+# 2. Reconstruct. The output is a copy of the input with a Reco tree added, so
+#    tpc_reco.root holds Events, Geometry and Reco together
+GArReconstruction -i output.root -m macros/tpc_reco.mac -o tpc_reco.root
 
-# 3. Reconstruct (optional; reads the simulation output, not the ntuple)
-GArReconstruction -i output.root -m macros/ecal_digi.mac -o ecal_reco.root
-GArReconstruction -i output.root -m macros/tpc_reco.mac  -o tpc_reco.root
+# 3. See what came out
+DumpSchema tpc_reco.root
 
-# 4. Analyse
-ExampleAnalysis ntuple.root example_out.root
+# 4. Analyse. The analysis macro is compiled when the job starts; the simulation
+#    objects and the reconstruction products are both read straight from the file
+GArAnalysis -a ExampleAnalysis.C -i tpc_reco.root -o example_out.root
+
+# 5. Optional: flatten it for uproot or bare ROOT
+MakeNtuple tpc_reco.root ntuple.root
 ```
+
+Step 2 is optional: an analysis that only uses truth-level information runs on `output.root` directly.
 
 Run the simulation with `-v` instead of `-m` for the interactive viewer; that is what creates the Geant4 visualisation manager.
 
-`GArSimulation` finds its run macros through `FASTGARSIM_MACRO_PATH` (exported by `setup.sh`) and through its own location, so it can be started from any directory. Macros still resolve against the working directory first, so a local `macros/` overrides the built-in one.
+`GArSimulation`, `GArReconstruction` and `GArAnalysis` find their macros through `FASTGARSIM_MACRO_PATH` (exported by `setup.sh`) and through their own location, so they can be started from any directory. Macros still resolve against the working directory first, so a local `macros/` overrides the built-in one.
 
 ## Where to go next
 

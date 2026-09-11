@@ -36,9 +36,9 @@ void TPCRecoAnalysis(const char* filename = "tpc_reco.root") {
         return;
     }
 
-    TTree* tree = (TTree*)file->Get("RecoTree");
+    TTree* tree = (TTree*)file->Get("Reco");
     if (!tree) {
-        std::cerr << "Error: Cannot find RecoTree in file" << std::endl;
+        std::cerr << "Error: Cannot find the Reco tree in file" << std::endl;
         return;
     }
 

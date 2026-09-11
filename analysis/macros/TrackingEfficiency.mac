@@ -1,0 +1,41 @@
+# TrackingEfficiency.mac -- job macro for TrackingEfficiency.C
+#
+# The input has to have been through the TPC reconstruction, since the
+# analysis reads TPCHits and TPCClusters:
+#
+#   GArReconstruction -i gun.root -m tpc_reco.mac -o tpc_reco.root
+#   GArAnalysis -m TrackingEfficiency.mac -i tpc_reco.root -o tracking_eff.root
+#
+# The cuts below are the working point. The output tree keeps the raw
+# quantities behind every one of them, so moving the working point is a matter
+# of re-cutting the tree rather than running the job again -- these are here
+# for the TEfficiency objects and the summary the job prints.
+
+# --------------------------------------------------------------------------
+# The job: what to run, over what, and where it goes
+# --------------------------------------------------------------------------
+/ana/global/analysis         TrackingEfficiency.C
+/ana/global/outputTree       TrackingEfficiency
+#/ana/global/input           tpc_reco.root   # Path, wildcard or comma-separated list
+#/ana/global/output          tracking_eff.root
+#/ana/global/maxEvents       1000            # -1 (the default) is all of them
+
+# --------------------------------------------------------------------------
+# Denominator: which primaries a tracker could reasonably be asked to find
+# --------------------------------------------------------------------------
+/ana/minTrueLength           5.     # True path in the gas [cm]
+/ana/excludeSecondaries      true   # Leave delta-ray deposits out of that path
+
+# --------------------------------------------------------------------------
+# Building the candidate out of the reconstruction
+# --------------------------------------------------------------------------
+/ana/minHitFraction          0.5    # Share of a hit's true energy to own it
+/ana/minClusterPurity        0.5    # Hit purity a cluster needs to join
+/ana/minClusterHits          3      # Matched hits a cluster needs to join
+
+# --------------------------------------------------------------------------
+# Numerator: when the candidate counts as a findable track
+# --------------------------------------------------------------------------
+/ana/minHits                 20     # Hits in the candidate
+/ana/minLength               10.    # 3D span it has to cover [cm]
+/ana/minPurity               0.5    # Fraction of its hits owned by the primary

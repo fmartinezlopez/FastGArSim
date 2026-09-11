@@ -7,7 +7,7 @@
 # command line is resolved by TApplication::GetOptions while ROOT is still
 # being constructed, which is before any logon file runs. So
 #
-#     root -l -q 'EventToNtupleConverter.C("sim.root", "ntuple.root")'
+#     root -l -q 'MakeNtuple.C("sim.root", "ntuple.root")'
 #
 # only works if the macro path was already set, i.e. from a .rootrc.
 #

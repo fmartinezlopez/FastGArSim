@@ -33,6 +33,12 @@ public:
 
     // Get global parameters
     std::string GetGlobalParameter(const std::string& key, const std::string& defaultValue = "") const;
+    bool GetGlobalParameterBool(const std::string& key, bool defaultValue) const;
+
+    // The macro that was parsed, kept so that the output file can record how
+    // it was produced
+    const std::string& GetPath() const { return fPath; }
+    const std::string& GetText() const { return fText; }
 
 private:
     void ProcessLine(const std::string& line);
@@ -45,6 +51,8 @@ private:
     std::vector<ModuleConfig> fModuleConfigs;
     std::map<std::string, std::string> fGlobalParameters;
     std::string fCurrentModule;
+    std::string fPath;
+    std::string fText;
 };
 
 #endif

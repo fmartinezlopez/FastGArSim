@@ -1,0 +1,31 @@
+# TruncatedDEDX.mac -- job macro for TruncatedDEDX.C
+#
+# Run with:
+#   GArAnalysis -m TruncatedDEDX.mac -i 'gun_*.root' -o dedx.root
+#
+# Every parameter here is optional: one that is left out keeps the default the
+# analysis declares, so a macro only has to say what is to differ.
+
+# --------------------------------------------------------------------------
+# The job: what to run, over what, and where it goes
+# --------------------------------------------------------------------------
+/ana/global/analysis      TruncatedDEDX.C
+/ana/global/outputTree    DEDXTree         # Name of the tree in the output file
+#/ana/global/input        gun_*.root       # Path, wildcard or comma-separated list
+#/ana/global/output       dedx.root
+#/ana/global/maxEvents    1000             # -1 (the default) is all of them
+
+# --------------------------------------------------------------------------
+# The analysis: truncated mean dE/dx of the primaries in the gas TPC
+# --------------------------------------------------------------------------
+/ana/truncation           0.6    # Fraction of the dE/dx samples kept, lowest first
+/ana/excludeSecondaries   true   # Drop the deposits booked as delta rays
+/ana/requireExit          false  # true keeps only the tracks that leave the TPC
+/ana/minHits              10     # Samples a primary needs to be used at all
+
+# Plot ranges. Negative takes the axis from the data, which is the default, so
+# these only need setting to pin an axis down.
+#/ana/pMin                0.1    # [GeV/c]
+#/ana/pMax                5.0    # [GeV/c]
+#/ana/dedxMin             0.     # [keV/cm]
+#/ana/dedxMax             100.   # [keV/cm]

@@ -7,13 +7,22 @@
  * Description:
  *   Data holders for the three input trees consumed by an analysis:
  *
- *     - GenieEvent   -> GENIE "gst" tree  (truth-level interaction record)
- *     - SimEvent     -> FastGArSim "AnaTree" (flat per-event particle/hit ntuple)
- *     - GeometryInfo -> FastGArSim "GeoTree" (detector configuration, 1 entry)
+ *     - GenieEvent   -> GENIE "gst" tree (truth-level interaction record)
+ *     - SimEvent     -> FastGArSim "Events" tree (root::Event objects)
+ *     - GeometryInfo -> FastGArSim "Geometry" tree (detector configuration)
  *
- *   Each holder knows how to attach itself to a TTree. Branches that are
- *   absent from a given file are reported once and left at their default
- *   values, so the same reader works with older files, gun-only samples, etc.
+ *   Each holder knows how to attach itself to a TTree. GenieEvent and
+ *   GeometryInfo read one branch per field, and a branch a given file does
+ *   not have is reported once and left at its default value, so the same
+ *   reader works with older files, gun-only samples, and files with no
+ *   geometry record.
+ *
+ *   SimEvent reads the simulation's objects as they were written: no flat
+ *   ntuple stage in between. The event itself is reachable as sim.event, and
+ *   on top of it SimEvent offers the two views an analysis usually wants --
+ *   particles by index, and every hit of a sub-detector in one flat list,
+ *   regardless of which particle produced it. The flat list is built lazily,
+ *   once per event, and only if something asks for it.
  *
  ***************************************************************************/
 
@@ -26,6 +35,8 @@
 
 #include "Rtypes.h"
 #include "TVector3.h"
+
+#include "SimDataTypes.hh"
 
 class TTree;
 
@@ -92,86 +103,94 @@ struct GenieEvent {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                     FastGArSim flat ntuple (AnaTree)                       */
+/*                    FastGArSim simulation output (Events)                   */
 /* -------------------------------------------------------------------------- */
 
+// A flat view of one sub-detector's hits, gathered from every particle in the
+// event. Built on first use and thrown away when the next event is loaded.
+template <class Hit>
+struct HitView {
+    std::vector<const Hit*> hits;
+    std::vector<Int_t> trackIDs;      // particle each hit belongs to
+    std::vector<Bool_t> secondary;    // was it in the particle's sec_ list?
+    std::unordered_map<Int_t, std::vector<size_t>> byTrack;
+    Bool_t built = kFALSE;
+};
+
 struct SimEvent {
-    Int_t eventID = 0;
 
-    // Particle properties
-    std::vector<Int_t> *trackID = nullptr;
-    std::vector<Int_t> *pdgCode = nullptr;
-    std::vector<Int_t> *motherID = nullptr;
-    std::vector<std::string> *creatorProcess = nullptr;
-    std::vector<std::string> *endProcess = nullptr;
+    // The event exactly as the simulation wrote it: ROOT refills it on every
+    // GetEntry(), so treat it as read-only. Null until Connect(). This is the
+    // thing to reach for when the views below do not cover what you want.
+    root::Event* event = nullptr;
 
-    // Start and end trajectory points
-    std::vector<Float_t> *startX = nullptr, *startY = nullptr, *startZ = nullptr;
-    std::vector<Float_t> *endX = nullptr, *endY = nullptr, *endZ = nullptr;
+    Int_t eventID = 0;   // refreshed every entry
 
-    // Initial and final momenta
-    std::vector<Float_t> *startPX = nullptr, *startPY = nullptr, *startPZ = nullptr;
-    std::vector<Float_t> *endPX = nullptr, *endPY = nullptr, *endPZ = nullptr;
+    // Attach to the "Event" branch of `tree`
+    void Connect(TTree* tree, const char* branchName = "Event");
 
-    // TPC hits
-    std::vector<Int_t> *tpcHitTrackID = nullptr;
-    std::vector<Bool_t> *tpcHitIsSec = nullptr;
-    std::vector<Float_t> *tpcHitX = nullptr, *tpcHitY = nullptr, *tpcHitZ = nullptr;
-    std::vector<Float_t> *tpcHitEdep = nullptr;
-    std::vector<Float_t> *tpcHitStepSize = nullptr;
-
-    // ECal hits
-    std::vector<Int_t> *ecalHitTrackID = nullptr;
-    std::vector<Bool_t> *ecalHitIsSec = nullptr;
-    std::vector<Float_t> *ecalHitX = nullptr, *ecalHitY = nullptr, *ecalHitZ = nullptr;
-    std::vector<Float_t> *ecalHitTime = nullptr;
-    std::vector<Float_t> *ecalHitEdep = nullptr;
-    std::vector<Int_t> *ecalHitSegment = nullptr;
-    std::vector<Int_t> *ecalHitLayer = nullptr;
-    std::vector<Int_t> *ecalHitDetID = nullptr;
-
-    // MuID hits
-    std::vector<Int_t> *muidHitTrackID = nullptr;
-    std::vector<Bool_t> *muidHitIsSec = nullptr;
-    std::vector<Float_t> *muidHitX = nullptr, *muidHitY = nullptr, *muidHitZ = nullptr;
-    std::vector<Float_t> *muidHitTime = nullptr;
-    std::vector<Float_t> *muidHitEdep = nullptr;
-    std::vector<Int_t> *muidHitSegment = nullptr;
-    std::vector<Int_t> *muidHitLayer = nullptr;
-    std::vector<Int_t> *muidHitDetID = nullptr;
-
-    // Attach every branch above to `tree`
-    void Connect(TTree* tree);
-
-    // Invalidate the per-event lookup caches. AnalysisBase calls this after
-    // every GetEntry(), so analyses never need to.
+    // Drop the per-event views. AnalysisBase calls this after every
+    // GetEntry(), so analyses never need to.
     void Update();
 
-    /* ------------------------------ Collection sizes ---------------------- */
+    Bool_t IsValid() const { return event != nullptr; }
 
-    size_t NParticles() const { return trackID ? trackID->size() : 0; }
-    size_t NTPCHits()   const { return tpcHitTrackID ? tpcHitTrackID->size() : 0; }
-    size_t NECalHits()  const { return ecalHitTrackID ? ecalHitTrackID->size() : 0; }
-    size_t NMuIDHits()  const { return muidHitTrackID ? muidHitTrackID->size() : 0; }
+    /* ------------------------------- Particles ---------------------------- */
 
-    /* ------------------------------ Vector accessors ---------------------- */
+    size_t NParticles() const { return event ? event->particles.size() : 0; }
 
+    // Undefined for i >= NParticles(); check first, as with any vector
+    const root::Particle& Particle(size_t i) const { return event->particles[i]; }
+
+    Int_t TrackID(size_t i) const;
+    Int_t PdgCode(size_t i) const;
+    Int_t MotherID(size_t i) const;
+    std::string CreatorProcess(size_t i) const;
+    std::string EndProcess(size_t i) const;
+
+    // First and last point of the stored trajectory. A particle with no
+    // trajectory points gives the null vector.
     TVector3 StartPosition(size_t i) const;
     TVector3 EndPosition(size_t i) const;
     TVector3 StartMomentum(size_t i) const;
     TVector3 EndMomentum(size_t i) const;
 
-    TVector3 TPCHitPosition(size_t i) const;
-    TVector3 ECalHitPosition(size_t i) const;
-    TVector3 MuIDHitPosition(size_t i) const;
+    // Whether there is a trajectory to take those from
+    Bool_t HasTrajectory(size_t i) const;
+
+    /* --------------------------------- Hits ------------------------------- */
+    /* One flat list per sub-detector, over every particle in the event, in    */
+    /* particle order with each particle's own hits before its secondaries'.   */
+
+    size_t NTPCHits()  const;
+    size_t NECalHits() const;
+    size_t NMuIDHits() const;
+
+    const root::TPCHit&  TPCHit(size_t k) const;
+    const root::ECalHit& ECalHit(size_t k) const;
+    const root::MuIDHit& MuIDHit(size_t k) const;
+
+    TVector3 TPCHitPosition(size_t k) const;
+    TVector3 ECalHitPosition(size_t k) const;
+    TVector3 MuIDHitPosition(size_t k) const;
+
+    // The particle a hit belongs to, and whether it was booked as one of that
+    // particle's secondaries (a delta ray folded back onto its parent)
+    Int_t TPCHitTrackID(size_t k) const;
+    Int_t ECalHitTrackID(size_t k) const;
+    Int_t MuIDHitTrackID(size_t k) const;
+
+    Bool_t TPCHitIsSecondary(size_t k) const;
+    Bool_t ECalHitIsSecondary(size_t k) const;
+    Bool_t MuIDHitIsSecondary(size_t k) const;
 
     /* ------------------------------ Track lookups ------------------------- */
 
     // Index of the particle with the given Geant4 track ID, or -1 if absent.
     Int_t IndexOfTrack(Int_t id) const;
 
-    // Indices of the hits belonging to a given track ID. The maps are built
-    // once per event on first use, so repeated calls are cheap.
+    // Indices into the flat hit lists above. The maps are built once per
+    // event on first use, so repeated calls are cheap.
     const std::vector<size_t>& TPCHitsOfTrack(Int_t id) const;
     const std::vector<size_t>& ECalHitsOfTrack(Int_t id) const;
     const std::vector<size_t>& MuIDHitsOfTrack(Int_t id) const;
@@ -182,24 +201,23 @@ struct SimEvent {
     Double_t MuIDEdepOfTrack(Int_t id) const;
 
 private:
-    using HitIndexMap = std::unordered_map<Int_t, std::vector<size_t>>;
+    const HitView<root::TPCHit>&  TPCView() const;
+    const HitView<root::ECalHit>& ECalView() const;
+    const HitView<root::MuIDHit>& MuIDView() const;
 
-    static const std::vector<size_t>& Lookup(const HitIndexMap& map, Int_t id);
-    static void BuildHitMap(const std::vector<Int_t>* ids, HitIndexMap& map);
+    static const std::vector<size_t>& Lookup(
+        const std::unordered_map<Int_t, std::vector<size_t>>& map, Int_t id);
+
+    mutable HitView<root::TPCHit>  fTPC;
+    mutable HitView<root::ECalHit> fECal;
+    mutable HitView<root::MuIDHit> fMuID;
 
     mutable std::unordered_map<Int_t, Int_t> fTrackIndex;
-    mutable HitIndexMap fTPCHitsByTrack;
-    mutable HitIndexMap fECalHitsByTrack;
-    mutable HitIndexMap fMuIDHitsByTrack;
-
     mutable Bool_t fTrackIndexValid = kFALSE;
-    mutable Bool_t fTPCMapValid = kFALSE;
-    mutable Bool_t fECalMapValid = kFALSE;
-    mutable Bool_t fMuIDMapValid = kFALSE;
 };
 
 /* -------------------------------------------------------------------------- */
-/*                    FastGArSim geometry record (GeoTree)                    */
+/*                   FastGArSim geometry record (Geometry)                    */
 /* -------------------------------------------------------------------------- */
 
 struct GeometryInfo {

@@ -15,7 +15,7 @@ void PrintUsage() {
     std::cout << "\n Usage: GArReconstruction [options]" << std::endl;
     std::cout << "\n Options:" << std::endl;
     std::cout << "   -i <file>     Input ROOT file from simulation (required)" << std::endl;
-    std::cout << "   -o <file>     Output ROOT file for reconstruction (default: reconstruction_output.root)" << std::endl;
+    std::cout << "   -o <file>     Output ROOT file (default: the input with _reco before .root)" << std::endl;
     std::cout << "   -m <file>     Macro file for reconstruction configuration (required)" << std::endl;
     std::cout << "   -h, --help    Show this help message" << std::endl;
     std::cout << std::endl;
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
     // Parse command line arguments
     std::string inputFile = "";
-    std::string outputFile = "reconstruction_output.root";
+    std::string outputFile = "";
     std::string macroFile = "";
 
     for (int i = 1; i < argc; i++) {
@@ -66,6 +66,15 @@ int main(int argc, char** argv) {
         std::cerr << "\nError: Macro file required!" << std::endl;
         PrintUsage();
         return 1;
+    }
+
+    // The output is a copy of the input with the reconstruction added, so name
+    // it after the input rather than after the program
+    if (outputFile.empty()) {
+        const size_t extension = inputFile.rfind(".root");
+        outputFile = (extension == std::string::npos)
+                   ? inputFile + "_reco.root"
+                   : inputFile.substr(0, extension) + "_reco.root";
     }
 
     // The macros are copied next to the executable, so look for them there as

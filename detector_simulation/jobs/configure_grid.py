@@ -215,7 +215,7 @@ if [ $G4_RESULT -ne 0 ]; then
 fi
 
 # Run ntuple maker
-root -q -b 'EventToNtupleConverter.C("test.root", "out.root")'
+root -q -b 'MakeNtuple.C("test.root", "out.root")'
 
 NTUPLE_RESULT=$?
 if [ $NTUPLE_RESULT -ne 0 ]; then

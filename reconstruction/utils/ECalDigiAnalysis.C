@@ -36,9 +36,9 @@ void ECalDigiAnalysis(const char* filename = "ecal_digi.root") {
         return;
     }
 
-    TTree* tree = (TTree*)file->Get("RecoTree");
+    TTree* tree = (TTree*)file->Get("Reco");
     if (!tree) {
-        std::cerr << "Error: Cannot find RecoTree in file" << std::endl;
+        std::cerr << "Error: Cannot find the Reco tree in file" << std::endl;
         return;
     }
 

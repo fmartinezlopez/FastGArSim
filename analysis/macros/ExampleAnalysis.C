@@ -15,22 +15,37 @@
  *   called once per event with `sim`, `genie` and `geo` already filled.
  *
  *   The analysis itself clusters the ECal barrel hits of each layer with
- *   DBSCAN and writes one output entry per cluster.
+ *   DBSCAN and writes one output entry per cluster. It also shows how to
+ *   reach a reconstruction product: the input may or may not hold one, so it
+ *   is asked for by name in BeginJob() and the handle is tested before use.
+ *
+ *   The input is a simulation file, or a reconstruction file, which by
+ *   default carries the simulation trees along with the reconstruction.
  *
  * Usage:
- *   From the build directory (rootlogon.C sets everything up):
+ *   The macro is run by GArAnalysis, which compiles it and hands it the job:
  *
- *     root -l 'macros/ExampleAnalysis.C("ntuple.root", "example_out.root")'
+ *     GArAnalysis -a ExampleAnalysis.C -i sim.root -o example_out.root
  *
- *   With the GENIE truth record attached:
+ *   With the GENIE truth record attached, and with the parameters below set
+ *   from a job macro rather than left at their defaults:
  *
- *     root -l 'macros/ExampleAnalysis.C("ntuple.root", "example_out.root", "genie.gst.root")'
+ *     GArAnalysis -a ExampleAnalysis.C -i sim.root -o example_out.root \
+ *                 -g genie.gst.root -m ExampleAnalysis.mac
  *
- *   From anywhere else, source build/setup.sh first.
+ *   From anywhere other than the build directory, source build/setup.sh
+ *   first, or give the macros by their full path.
+ *
+ * Parameters (see ExampleAnalysis.mac):
+ *   /ana/eps      cluster radius handed to DBSCAN [cm]
+ *   /ana/minPts   neighbours a hit needs to be a core hit
  *
  ***************************************************************************/
 
-R__LOAD_LIBRARY(libGArAnalysis)
+// GArAnalysis has libGArAnalysis loaded before it compiles this macro, so
+// there is no R__LOAD_LIBRARY here. To compile it by hand in ROOT instead
+// (.L ExampleAnalysis.C+), start ROOT from the build directory or with its
+// rootlogon.C, which is what loads the library there.
 
 #include <iostream>
 #include <unordered_map>
@@ -43,15 +58,9 @@ R__LOAD_LIBRARY(libGArAnalysis)
 
 #include "AnalysisBase.hh"
 #include "Clustering.hh"
+#include "DigiDataTypes.hh"
 #include "PlotStyle.hh"
-
-/* -------------------------------------------------------------------------- */
-/*                              Analysis parameters                           */
-/* -------------------------------------------------------------------------- */
-
-// Parameters for DBSCAN
-const Double_t kEps = 0.5;   // cluster radius (in cm)
-const Int_t kMinPts = 5;     // minimum neighbours
+#include "SimDataTypes.hh"
 
 /* -------------------------------------------------------------------------- */
 /*                                  Analysis                                  */
@@ -59,6 +68,18 @@ const Int_t kMinPts = 5;     // minimum neighbours
 
 class ECalClusterAnalysis : public ana::AnalysisBase {
 protected:
+
+    /* ------------------------------------------------------------------ */
+    /* Called once, before anything is opened, with whatever the job macro */
+    /* set. A parameter the macro did not mention leaves its member alone, */
+    /* so the value it is declared with below is the default -- there is   */
+    /* no second place where the defaults have to be kept in step.         */
+    /* ------------------------------------------------------------------ */
+    void Configure(const ana::ParameterSet& params) override
+    {
+        params.Get("eps",    fEps);
+        params.Get("minPts", fMinPts);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Called once, before the event loop. Book output branches and        */
@@ -92,6 +113,16 @@ protected:
         fHPrimaryEcalE = new TH1F("hPrimaryEcalE",
                                   "Primary particle ECal energy;Energy deposit [MeV];Particles",
                                   50, 0, 500);
+        fHRecoClusterE = new TH1F("hRecoClusterE",
+                                  "Reconstructed TPC cluster energy;Energy [MeV];Clusters",
+                                  50, 0, 10);
+
+        // Reconstruction products are asked for by name, because which ones a
+        // file holds depends on how the reconstruction was configured.
+        // Optional() gives back a handle that is simply never valid when the
+        // product is absent, so this analysis also runs on plain simulation
+        // files; Require() would end the job instead, before the first event.
+        fClusters = Optional<std::vector<digi::TPCCluster>>("TPCClusters");
     }
 
     /* ------------------------------------------------------------------ */
@@ -100,8 +131,7 @@ protected:
     /* ------------------------------------------------------------------ */
     void Run() override
     {
-        // The hit branches are optional, so check before dereferencing
-        if (!sim.ecalHitDetID || !sim.ecalHitLayer || !sim.ecalHitEdep) return;
+        if (!sim.IsValid()) return;
 
         fEventID = sim.eventID;
 
@@ -114,16 +144,16 @@ protected:
         std::unordered_map<Int_t, std::vector<Float_t>> edepByLayer;
 
         for (size_t k = 0; k < sim.NECalHits(); ++k) {
-            if (sim.ecalHitDetID->at(k) != ana::kBarrel) continue;  // barrel only
-            const Int_t layer = sim.ecalHitLayer->at(k);
-            pointsByLayer[layer].push_back(sim.ECalHitPosition(k));
-            edepByLayer[layer].push_back(sim.ecalHitEdep->at(k));
+            const root::ECalHit& hit = sim.ECalHit(k);
+            if (hit.detID != ana::kBarrel) continue;  // barrel only
+            pointsByLayer[hit.layer].push_back(sim.ECalHitPosition(k));
+            edepByLayer[hit.layer].push_back(hit.energyDeposit);
         } // end loop over ECal hits
 
         for (const auto& [layer, points] : pointsByLayer) {
 
             const std::vector<Float_t>& edeps = edepByLayer[layer];
-            const std::vector<ana::Cluster> clusters = ana::DBSCAN3D(points, kEps, kMinPts);
+            const std::vector<ana::Cluster> clusters = ana::DBSCAN3D(points, fEps, fMinPts);
 
             fLayer = layer;
             fNHitsInLayer = static_cast<Int_t>(points.size());
@@ -150,10 +180,20 @@ protected:
         /* ------------- Energy deposited by the primary particles ------- */
 
         for (size_t i = 0; i < sim.NParticles(); ++i) {
-            if (sim.motherID && sim.motherID->at(i) != 0) continue;  // primaries only
-            const Double_t ecalEdep = sim.ECalEdepOfTrack(sim.trackID->at(i));
+            if (sim.MotherID(i) != 0) continue;  // primaries only
+            const Double_t ecalEdep = sim.ECalEdepOfTrack(sim.TrackID(i));
             if (ecalEdep > 0.) fHPrimaryEcalE->Fill(ecalEdep);
         } // end loop over particles
+
+        /* --------- Reconstructed TPC clusters, when the file has them --- */
+
+        // fClusters was asked for with Optional(), so it is only valid when
+        // the input has been through a reconstruction that produced them
+        if (fClusters) {
+            for (const digi::TPCCluster& cluster : *fClusters) {
+                fHRecoClusterE->Fill(cluster.energy);
+            }
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -165,6 +205,9 @@ protected:
                   << "Events processed:   " << NEvents() << "\n"
                   << "Clusters found:     " << fTotalClusters << "\n"
                   << "ECal barrel layers: " << geo.ECalBarrelLayers() << "\n"
+                  << "Reco TPC clusters:  "
+                  << (fClusters.IsValid() ? "read from the input"
+                                          : "not in the input") << "\n"
                   << std::endl;
 
         // Shared plotting style, then save a quick look at the results
@@ -178,6 +221,11 @@ protected:
     }
 
 private:
+    // Parameters for DBSCAN, with the values a job macro that says nothing
+    // about them gets
+    Double_t fEps = 0.5;   // cluster radius [cm]
+    Int_t fMinPts = 5;     // minimum neighbours
+
     // Output branch variables
     Int_t fEventID = 0;
     Int_t fLayer = 0;
@@ -189,31 +237,24 @@ private:
     Double_t fClusterX = 0., fClusterY = 0., fClusterZ = 0.;
     Double_t fNuEnergy = -1.;
 
+    // Reconstruction products this analysis can make use of
+    ana::Handle<std::vector<digi::TPCCluster>> fClusters;
+
     // Histograms (owned by the output file)
     TH1F* fHClustersPerLayer = nullptr;
     TH1F* fHClusterEdep = nullptr;
     TH1F* fHPrimaryEcalE = nullptr;
+    TH1F* fHRecoClusterE = nullptr;
 
     // Counters
     Long64_t fTotalClusters = 0;
 };
 
 /* -------------------------------------------------------------------------- */
-/*                                Main function                               */
+/*                       What GArAnalysis runs from here                      */
 /* -------------------------------------------------------------------------- */
 
-void ExampleAnalysis(const char* inputFilesG4,
-                     const char* outputFileName,
-                     const char* inputFilesGENIE = "",
-                     Long64_t maxEvents = -1)
-{
-    ana::AnalysisConfig config;
-    config.simFiles = inputFilesG4;          // path, wildcard or comma-separated list
-    config.outputFile = outputFileName;
-    config.genieFiles = inputFilesGENIE;     // leave empty for gun samples
-    config.outputTreeName = "ECalClusters";
-    config.maxEvents = maxEvents;            // -1 processes the whole file
-
-    ECalClusterAnalysis analysis;
-    analysis.Execute(config);
-}
+// The one line every analysis macro ends with. Which files to read, where to
+// write and how many events to do are the job's business, not the analysis's,
+// and come from the GArAnalysis command line and the job macro.
+ANA_ANALYSIS(ECalClusterAnalysis)

@@ -29,7 +29,7 @@ DetectorConstruction::DetectorConstruction()
 : G4VUserDetectorConstruction(),
   fGeometryType(kGArLike),
   fWorldLogical(nullptr),
-  fFieldLogical(nullptr), fTPCLogical(nullptr),
+  fFieldLogical(nullptr), fTPCLogical(nullptr), fTPCGasLogical(nullptr),
   fECalBarrelLogical(nullptr), fECalEndcapsLogical(nullptr), fECalScintillatorLogical(nullptr),
   fMuIDLogical(nullptr), fMuIDScintillatorLogical(nullptr),
   fLArTPCLogical(nullptr),
@@ -38,6 +38,7 @@ DetectorConstruction::DetectorConstruction()
   fLArTPCPhysical(nullptr),
   fMagneticField(nullptr), fMagneticFieldStrength(0.5*tesla),
   fTPCRadius(250.0*cm), fTPCLength(500.0*cm), fTPCPCBThickness(0.5*cm),
+  fTPCMaxStep(1.0*mm),
   fECalBarrelGap(20.0*cm), fECalEndcapGap(80.0*cm),
   fECalNumSides(12),
   fECalHGAbsorberThickness(0.7*mm), fECalHGScintillatorThickness(5.0*mm), fECalHGBoardThickness(1.0*mm),
@@ -197,6 +198,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Construct world volume
     fWorldPhysical = ConstructWorld();
 
+    fTPCGasLogical = nullptr;
+
     // Build detector based on selected geometry type
     switch(fGeometryType) {
         case kGArLike:
@@ -278,10 +281,8 @@ void DetectorConstruction::ConstructGArDetector()
     ConstructECal();
     ConstructMuID();
 
-    G4UserLimits* limitsTPCSteps = new G4UserLimits(5.0*mm);
     G4UserLimits* limitsCaloSteps = new G4UserLimits(5.0*mm);
 
-    fTPCLogical->SetUserLimits(limitsTPCSteps);
     fECalBarrelLogical->SetUserLimits(limitsCaloSteps);
     fECalEndcapsLogical->SetUserLimits(limitsCaloSteps);
     fMuIDLogical->SetUserLimits(limitsCaloSteps);
@@ -489,11 +490,17 @@ void DetectorConstruction::ConstructTPC()
 
     // Create and place TPC gas volume
     G4Tubs* tpcGasSolid = new G4Tubs("TPCGas", 0, fTPCRadius, fTPCLength/2, 0, twopi);
-    G4LogicalVolume* fTPCGasLogical = new G4LogicalVolume(tpcGasSolid, fGArTPCMaterial, "TPCGas_log");
+    fTPCGasLogical = new G4LogicalVolume(tpcGasSolid, fGArTPCMaterial, "TPCGas_log");
     G4VisAttributes* tpcGasVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.3));
     tpcGasVisAtt->SetVisibility(true);
     fTPCGasLogical->SetVisAttributes(tpcGasVisAtt);
     new G4PVPlacement(0, G4ThreeVector(0, 0, 0), fTPCGasLogical, "TPCGas_phys", fTPCLogical, false, 0, true);
+
+    // Force short steps in the gas: without this Geant4 crosses the whole TPC in a
+    // handful of steps (the ionisation and MSC step limits are metres in a gas this
+    // thin), which is fine for the total energy loss but far too coarse to seed a
+    // drift simulation.
+    fTPCGasLogical->SetUserLimits(new G4UserLimits(fTPCMaxStep));
 
     // Create PCB volume
     G4Tubs* tpcPCBSolid = new G4Tubs("TPCPCB", 0, fTPCRadius, fTPCPCBThickness/2, 0, twopi);
@@ -1212,6 +1219,23 @@ void DetectorConstruction::SetPressure(G4double pressure)
 
     if (fGeometryInitialized && fGeometryType == kGArLike) {
         UpdateGeometry();
+    }
+}
+
+void DetectorConstruction::SetTPCMaxStep(G4double step)
+{
+    fTPCMaxStep = step;
+    G4cout << "TPC maximum step size set to " << fTPCMaxStep/mm << " mm" << G4endl;
+
+    // The step limit is a property of the logical volume rather than of the solid, so
+    // it can be updated in place without rebuilding the geometry
+    if (fGeometryInitialized && fGeometryType == kGArLike && fTPCGasLogical) {
+        G4UserLimits* limits = fTPCGasLogical->GetUserLimits();
+        if (limits) {
+            limits->SetMaxAllowedStep(fTPCMaxStep);
+        } else {
+            fTPCGasLogical->SetUserLimits(new G4UserLimits(fTPCMaxStep));
+        }
     }
 }
 

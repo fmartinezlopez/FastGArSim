@@ -94,7 +94,8 @@ public:
 
   // Setter methods
   void SetOutputFileName(const G4String& name) { fOutputFileName = name; }
-  void SetEnergyCut(G4double cut);
+  void SetTPCEnergyCut(G4double cut);
+  void SetCaloEnergyCut(G4double cut);
 
   // Getter methods
   G4bool GetWriteTrajectory() const { return fWriteTrajectory; }
@@ -111,7 +112,8 @@ private:
   
   // Data members
   G4String fOutputFileName;
-  G4double fEnergyCut;
+  G4double fTPCEnergyCut;   // threshold for recording TPC gas hits
+  G4double fCaloEnergyCut;  // threshold for recording ECal and MuID hits
 
   // Current event data
   Event* fCurrentEvent;

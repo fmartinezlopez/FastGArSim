@@ -34,7 +34,7 @@ public:
     
     // Getter methods
     G4VPhysicalVolume* GetWorldVolume() const { return fWorldPhysical; }
-    G4LogicalVolume* GetTPCSensLogical()  const { return fTPCLogical; }
+    G4LogicalVolume* GetTPCSensLogical()  const { return fTPCGasLogical; }
     G4LogicalVolume* GetECalSensLogical() const { return fECalScintillatorLogical; }
     G4LogicalVolume* GetMuIDSensLogical() const { return fMuIDScintillatorLogical; }
     
@@ -69,6 +69,7 @@ public:
     void SetLArEnableMuonWindow(G4bool enable);
     void SetLArMuonWindowThickness(G4double thickness);
     void SetPressure(G4double pressure);
+    void SetTPCMaxStep(G4double step);
 
 private:
 
@@ -155,6 +156,7 @@ private:
     G4LogicalVolume* fWorldLogical;
     G4LogicalVolume* fFieldLogical;
     G4LogicalVolume* fTPCLogical;
+    G4LogicalVolume* fTPCGasLogical;
     G4LogicalVolume* fECalBarrelLogical;
     G4LogicalVolume* fECalEndcapsLogical;
     G4LogicalVolume* fECalScintillatorLogical;
@@ -177,6 +179,7 @@ private:
     G4double fTPCLength;                       // length of TPC
     G4double fTPCTotalLength;                  // length of TPC including PCB planes
     G4double fTPCPCBThickness;                 // thickness of PCB planes
+    G4double fTPCMaxStep;                      // maximum step size in the TPC gas
     G4double fECalBarrelGap;                   // distance between TPC and inner apothem of ECal barrel
     G4double fECalEndcapGap;                   // distance between TPC and start of ECal endcap (drift direction)
     G4double fECalHGAbsorberThickness;         // absorber thickness in high-granularity ECal layers

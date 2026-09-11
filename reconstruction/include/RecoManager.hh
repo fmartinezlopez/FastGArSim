@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "ProductSchema.hh"
+
 class TFile;
 class TTree;
 class RecoModule;
@@ -24,7 +26,13 @@ public:
     bool LoadMacro(const std::string& macroFile);
     void AddModule(RecoModule* module);
 
-    // Main reconstruction method
+    // Main reconstruction method.
+    //
+    // By default the output file starts life as a copy of the input, so that
+    // the result holds the simulation's Events and Geometry trees as well as
+    // the reconstruction's own tree and everything downstream needs one file.
+    // Set /reco/global/copyInput false in the macro to write the reconstruction
+    // products on their own.
     bool RunReconstruction(const std::string& inputFile, const std::string& outputFile);
 
 private:
@@ -41,11 +49,14 @@ private:
     bool CheckConsistency() const;
 
     // I/O management
-    bool OpenInputFile(const std::string& inputFile);
-    void CreateOutputFile(const std::string& outputFile);
+    bool OpenFiles();
     void InitializeOutput();
     void FillEvent();
     void ResetEvent();
+
+    // Record what this pass put in the file, so that a reader can find out
+    // what the file holds without being told separately
+    void WriteSchema();
 
     // ROOT I/O
     TFile* fInputFile;
@@ -62,6 +73,16 @@ private:
     // Module management
     std::vector<RecoModule*> fModules;
     MacroParser* fMacroParser;
+
+    // Job settings, taken from the macro's /reco/global block
+    std::string fInputFileName;
+    std::string fOutputFileName;
+    std::string fInputTreeName;
+    std::string fOutputTreeName;
+    bool fCopyInput;
+
+    // One entry per branch this pass added, with the module that added it
+    std::vector<fastgarsim::ProductInfo> fProducts;
 
     // Verbose output
     bool fVerbose;

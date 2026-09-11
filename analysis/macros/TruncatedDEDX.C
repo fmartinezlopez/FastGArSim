@@ -27,14 +27,13 @@
  *   energy deposits: Geant4 step lengths are not uniform, so the two orderings
  *   are not the same, and it is the dE/dx distribution whose Landau tail the
  *   truncation is meant to remove. To truncate on the raw deposits instead,
- *   sort on sim.tpcHitEdep and average edep/step over the surviving hits.
+ *   sort on the hits' energyDeposit and average edep/step over the survivors.
  *
  *   HOW THE EXIT KINETIC ENERGY IS OBTAINED
- *   The ntuple keeps only the first and last point of each trajectory, and
- *   the last point is where the track finally stops -- in the calorimeter or
- *   beyond for a punch-through particle, not where it crosses the TPC
- *   boundary. The kinetic energy at the boundary is therefore not stored and
- *   is reconstructed from energy conservation:
+ *   The last stored trajectory point is where the track finally stops -- in
+ *   the calorimeter or beyond for a punch-through particle, not where it
+ *   crosses the TPC boundary. The kinetic energy at the boundary is therefore
+ *   not stored and is reconstructed from energy conservation:
  *
  *       KE_exit = KE_initial - (energy deposited in the gas)
  *
@@ -44,47 +43,46 @@
  *   This ignores energy carried out of the gas by escaping secondaries and by
  *   radiated photons, so it is a lower bound on the loss; it is exact only to
  *   the extent that everything the particle lost was deposited locally. For
- *   the true boundary-crossing value the converter would have to store the
+ *   the true boundary-crossing value the simulation would have to store the
  *   momentum at the last trajectory point inside the TPC.
  *
- *   The ntuple stores energies in MeV and lengths in cm; this macro converts
- *   to the units conventionally used for dE/dx plots, GeV and keV/cm, on the
- *   way in. The output tree is in those units too.
+ *   The simulation stores energies in MeV and lengths in cm; this macro
+ *   converts to the units conventionally used for dE/dx plots, GeV and
+ *   keV/cm, on the way in. The output tree is in those units too.
  *
  * Usage:
- *   From the build directory:
+ *   The macro is run by GArAnalysis, which compiles it and hands it the job:
  *
- *     root -l 'macros/TruncatedDEDX.C("ntuple.root", "dedx.root")'
+ *     GArAnalysis -a TruncatedDEDX.C -i sim.root -o dedx.root
  *
  *   The input accepts wildcards and comma-separated lists, and files under
  *   /pnfs are streamed over XRootD automatically:
  *
- *     root -l 'macros/TruncatedDEDX.C("/pnfs/dune/scratch/users/me/gun_*.root", "dedx.root")'
+ *     GArAnalysis -a TruncatedDEDX.C -i '/pnfs/dune/scratch/users/me/gun_*.root' \
+ *                 -o dedx.root
  *
- *   Restrict the plots to 0.1 < p < 5 GeV/c and 0 < dE/dx < 100 keV/cm:
+ *   The parameters below come from a job macro, and only the ones that are to
+ *   differ from the defaults have to appear in it:
  *
- *     root -l 'macros/TruncatedDEDX.C("ntuple.root", "dedx.root", 0.1, 5., 0., 100.)'
+ *     GArAnalysis -a TruncatedDEDX.C -i sim.root -o dedx.root -m TruncatedDEDX.mac
  *
- *   Restrict the momentum only, and let the dE/dx axis follow the data:
+ * Parameters (see TruncatedDEDX.mac):
+ *   /ana/truncation           fraction of the dE/dx samples kept, lowest first
+ *   /ana/excludeSecondaries   drop the deposits booked as delta rays
+ *   /ana/requireExit          keep only the tracks that leave the TPC
+ *   /ana/minHits              samples a primary needs to be used at all
+ *   /ana/pMin, /ana/pMax      momentum axis [GeV/c]; negative takes it from the data
+ *   /ana/dedxMin, /ana/dedxMax  dE/dx axis [keV/cm]; negative takes it from the data
  *
- *     root -l 'macros/TruncatedDEDX.C("ntuple.root", "dedx.root", 0.1, 5.)'
- *
- *   Keep a different fraction of the samples, and include delta-ray deposits:
- *
- *     root -l 'macros/TruncatedDEDX.C("ntuple.root", "dedx.root", -1, -1, -1, -1, 0.7, kFALSE)'
- *
- *   Keep only the tracks that punch through the TPC:
- *
- *     root -l 'macros/TruncatedDEDX.C("ntuple.root", "dedx.root", -1, -1, -1, -1, 0.6, kTRUE, kTRUE)'
- *
- *   The dE/dx and momentum axes can be restricted from the argument list; the
+ *   The dE/dx and momentum axes are the only ones that can be restricted; the
  *   track-length and kinetic-energy axes always follow the data.
- *
- *   From anywhere else, source build/setup.sh first.
  *
  ***************************************************************************/
 
-R__LOAD_LIBRARY(libGArAnalysis)
+// GArAnalysis has libGArAnalysis loaded before it compiles this macro, so
+// there is no R__LOAD_LIBRARY here. To compile it by hand in ROOT instead
+// (.L TruncatedDEDX.C+), start ROOT from the build directory or with its
+// rootlogon.C, which is what loads the library there.
 
 #include <algorithm>
 #include <cmath>
@@ -106,13 +104,14 @@ R__LOAD_LIBRARY(libGArAnalysis)
 #include "AnalysisBase.hh"
 #include "AnalysisMath.hh"
 #include "PlotStyle.hh"
+#include "SimDataTypes.hh"
 
 /* -------------------------------------------------------------------------- */
 /*                              Unit conversions                              */
 /* -------------------------------------------------------------------------- */
 
-// The ntuple stores momenta in MeV/c, energy deposits in MeV and step sizes
-// in cm, so dE/dx comes out in MeV/cm
+// The simulation stores momenta in MeV/c, energy deposits in MeV and step
+// sizes in cm, so dE/dx comes out in MeV/cm
 const Double_t kMeVToGeV = 1.e-3;
 const Double_t kMeVPerCmToKeVPerCm = 1.e3;
 
@@ -121,34 +120,39 @@ const Double_t kMeVPerCmToKeVPerCm = 1.e3;
 /* -------------------------------------------------------------------------- */
 
 class TruncatedDEDXAnalysis : public ana::AnalysisBase {
-public:
-    TruncatedDEDXAnalysis(Double_t truncation,
-                          Bool_t excludeSecondaries,
-                          Bool_t requireExit,
-                          Int_t minHits,
-                          Double_t pMin,
-                          Double_t pMax,
-                          Double_t dedxMin,
-                          Double_t dedxMax)
-        : fTruncation(truncation),
-          fExcludeSecondaries(excludeSecondaries),
-          fRequireExit(requireExit),
-          fMinHits(minHits),
-          fPMin(pMin),
-          fPMax(pMax),
-          fDEDXMin(dedxMin),
-          fDEDXMax(dedxMax)
-    {}
-
 protected:
+
+    /* ------------------------------------------------------------------ */
+    /* The parameters this analysis takes, read from the job macro before  */
+    /* anything is opened. One the macro does not set keeps the value its  */
+    /* member is declared with at the bottom of the class.                 */
+    /* ------------------------------------------------------------------ */
+    void Configure(const ana::ParameterSet& params) override
+    {
+        params.Get("truncation",         fTruncation);
+        params.Get("excludeSecondaries", fExcludeSecondaries);
+        params.Get("requireExit",        fRequireExit);
+        params.Get("minHits",            fMinHits);
+        params.Get("pMin",               fPMin);
+        params.Get("pMax",               fPMax);
+        params.Get("dedxMin",            fDEDXMin);
+        params.Get("dedxMax",            fDEDXMax);
+
+        // A truncation outside (0, 1] would silently become "keep one sample"
+        // or "keep everything" inside ana::TruncatedMean, so say so instead
+        if (fTruncation <= 0. || fTruncation > 1.) {
+            std::cerr << "TruncatedDEDX: /ana/truncation has to be in (0, 1], not "
+                      << fTruncation << std::endl;
+            Abort();
+        }
+    }
 
     void BeginJob() override
     {
-        // The punch-through selection needs the TPC dimensions and the track
-        // end points. Both are known by now -- the input branches and the
-        // geometry record are read before BeginJob() runs -- so a job that
-        // cannot apply the requested selection is stopped here rather than
-        // quietly producing an unselected plot.
+        // The punch-through selection needs the TPC dimensions, which are
+        // known by now -- the geometry record is read before BeginJob() runs
+        // -- so a job that cannot apply the requested selection is stopped
+        // here rather than quietly producing an unselected plot.
         if (fRequireExit && !SetUpExitSelection()) {
             fSelectionUsable = kFALSE;
             Abort();
@@ -175,30 +179,25 @@ protected:
     /* ------------------------------------------------------------------ */
     void Run() override
     {
-        // Everything below needs these branches
-        if (!sim.trackID || !sim.motherID || !sim.pdgCode) return;
-        if (!sim.tpcHitEdep || !sim.tpcHitStepSize) return;
+        if (!sim.IsValid()) return;
 
         for (size_t i = 0; i < sim.NParticles(); ++i) {
 
             /* ------------------- Identify the primary ------------------ */
 
-            if (sim.motherID->at(i) != 0) continue;  // primaries only
+            if (sim.MotherID(i) != 0) continue;  // primaries only
 
-            const Int_t id = sim.trackID->at(i);
+            const Int_t id = sim.TrackID(i);
 
             /* ------------ Punch-through selection (optional) ----------- */
 
             if (fRequireExit) {
-                const TVector3 end = sim.EndPosition(i);
-
-                // The converter writes -9999 when a particle has no stored
-                // trajectory points, so its fate is unknown
-                if (end.X() < -9000.) {
+                // A particle with no stored trajectory has no known fate
+                if (!sim.HasTrajectory(i)) {
                     fNNoEndPoint++;
                     continue;
                 }
-                if (!ExitsTPC(end)) {
+                if (!ExitsTPC(sim.EndPosition(i))) {
                     fNStoppedInTPC++;
                     continue;
                 }
@@ -214,13 +213,15 @@ protected:
                 // Deposits attributed to unstored secondaries of this track,
                 // i.e. delta rays. Excluded by default: they are what the
                 // truncated mean is meant to be insensitive to.
-                if (fExcludeSecondaries && sim.tpcHitIsSec && sim.tpcHitIsSec->at(k)) continue;
+                if (fExcludeSecondaries && sim.TPCHitIsSecondary(k)) continue;
 
-                const Double_t step = sim.tpcHitStepSize->at(k);
+                const root::TPCHit& hit = sim.TPCHit(k);
+
+                const Double_t step = hit.stepSize;
                 if (step <= 0.) continue;  // guard against zero-length steps
 
                 // MeV / cm -> keV / cm
-                samples.push_back(sim.tpcHitEdep->at(k) / step * kMeVPerCmToKeVPerCm);
+                samples.push_back(hit.energyDeposit / step * kMeVPerCmToKeVPerCm);
                 trackLength += step;
             } // end loop over TPC hits of this track
 
@@ -235,9 +236,8 @@ protected:
 
             const TVector3 momentum = sim.StartMomentum(i);
 
-            // The converter writes -9999 when a particle has no stored
-            // trajectory points
-            if (momentum.X() < -9000. || momentum.Mag() <= 0.) {
+            // The null vector, when the particle has no stored trajectory
+            if (momentum.Mag() <= 0.) {
                 fNNoMomentum++;
                 continue;
             }
@@ -250,7 +250,7 @@ protected:
             fDEDX = ana::TruncatedMean(samples, fTruncation, &kept);
 
             fEventID = sim.eventID;
-            fPdgCode = sim.pdgCode->at(i);
+            fPdgCode = sim.PdgCode(i);
             fMomentum = momentum.Mag() * kMeVToGeV;   // MeV/c -> GeV/c
             fNHits = nHits;
             fNHitsKept = static_cast<Int_t>(kept);
@@ -619,12 +619,6 @@ private:
     /* ------------------------------------------------------------------ */
     Bool_t SetUpExitSelection()
     {
-        if (!sim.endX || !sim.endY || !sim.endZ) {
-            std::cerr << "Punch-through selection requested, but the input has no "
-                      << "end-position branches (endX/endY/endZ)." << std::endl;
-            return kFALSE;
-        }
-
         if (!HasGeometry()) {
             std::cerr << "Punch-through selection requested, but the input has no "
                       << "geometry tree, so the TPC dimensions are unknown."
@@ -671,12 +665,12 @@ private:
     static constexpr Int_t kNDEDXBins = 100;
 
     // Settings
-    Double_t fTruncation;
-    Bool_t fExcludeSecondaries;
-    Bool_t fRequireExit;          // keep only tracks that leave the TPC
-    Int_t fMinHits;
-    Double_t fPMin, fPMax;        // GeV/c,  negative -> from the data
-    Double_t fDEDXMin, fDEDXMax;  // keV/cm, negative -> from the data
+    Double_t fTruncation = 0.6;             // keep the lowest 60% of the samples
+    Bool_t fExcludeSecondaries = kTRUE;     // drop delta-ray deposits
+    Bool_t fRequireExit = kFALSE;           // keep only tracks that leave the TPC
+    Int_t fMinHits = 10;                    // minimum samples per particle
+    Double_t fPMin = -1., fPMax = -1.;      // GeV/c,  negative -> from the data
+    Double_t fDEDXMin = -1., fDEDXMax = -1.;  // keV/cm, negative -> from the data
 
     // TPC gas volume, filled in when the punch-through selection is set up
     Double_t fTPCRadius = 0.;      // cm
@@ -714,29 +708,8 @@ private:
 };
 
 /* -------------------------------------------------------------------------- */
-/*                                Main function                               */
+/*                       What GArAnalysis runs from here                      */
 /* -------------------------------------------------------------------------- */
 
-void TruncatedDEDX(const char* inputFilesG4,
-                   const char* outputFileName,
-                   Double_t pMin = -1.,                // GeV/c,  < 0 -> from the data
-                   Double_t pMax = -1.,                // GeV/c,  < 0 -> from the data
-                   Double_t dedxMin = -1.,             // keV/cm, < 0 -> 0
-                   Double_t dedxMax = -1.,             // keV/cm, < 0 -> from the data
-                   Double_t truncation = 0.6,          // keep the lowest 60%
-                   Bool_t excludeSecondaries = kTRUE,  // drop delta-ray deposits
-                   Bool_t requireExit = kFALSE,        // punch-through tracks only
-                   Int_t minHits = 10,                 // minimum samples per particle
-                   Long64_t maxEvents = -1)
-{
-    ana::AnalysisConfig config;
-    config.simFiles = inputFilesG4;   // path, wildcard or comma-separated list
-    config.outputFile = outputFileName;
-    config.outputTreeName = "DEDXTree";
-    config.maxEvents = maxEvents;
-    // No GENIE file: this is a particle-gun sample
-
-    TruncatedDEDXAnalysis analysis(truncation, excludeSecondaries, requireExit,
-                                   minHits, pMin, pMax, dedxMin, dedxMax);
-    analysis.Execute(config);
-}
+// The output tree is named in TruncatedDEDX.mac, with /ana/global/outputTree
+ANA_ANALYSIS(TruncatedDEDXAnalysis)
